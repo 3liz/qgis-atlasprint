@@ -19,6 +19,10 @@
  ***************************************************************************/
  This script initializes the plugin, making it known to QGIS and QGIS Server.
 """
+try:
+    from qgis.server import *
+except:
+    pass
 
 
 # noinspection PyPep8Naming

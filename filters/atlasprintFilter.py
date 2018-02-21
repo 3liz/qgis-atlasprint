@@ -21,11 +21,12 @@
 import os, time, tempfile
 from qgis.server import *
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
-from qgis.core import QgsApplication, QgsProject, QgsComposition, QgsComposerMap, QgsMessageLog, QgsLogger
-from PyQt4.QtCore import QFileInfo
+from qgis.core import QgsApplication, QgsProject, QgsComposition, QgsComposerMap, QgsMessageLog, QgsLogger, QgsExpression, QgsFeatureRequest
+from PyQt4.QtCore import QFileInfo, QByteArray
 from PyQt4.QtXml import QDomDocument
-import os, sys
+import json, os, sys
 import tempfile
+import syslog
 from uuid import uuid4
 
 class atlasprintFilter(QgsServerFilter):
@@ -33,7 +34,7 @@ class atlasprintFilter(QgsServerFilter):
     def __init__(self, serverIface):
         QgsMessageLog.logMessage("atlasprintFilter.init")
         super(atlasprintFilter, self).__init__(serverIface)
-
+        self.serverIface = serverIface
         self.request = None
         self.project = None
         self.project_path = None
@@ -48,6 +49,9 @@ class atlasprintFilter(QgsServerFilter):
             os.mkdir( self.tempdir )
         QgsMessageLog.logMessage("atlasprintFilter.tempdir: %s" % self.tempdir)
 
+        #syslog.syslog(syslog.LOG_ERR, "ATLAS - INITIALIZE")
+
+
     def setJsonResponse(self, status, body):
         '''
         Set response with given parameters
@@ -61,6 +65,9 @@ class atlasprintFilter(QgsServerFilter):
 
 
     def responseComplete(self):
+        '''
+        Send new response
+        '''
         self.request = self.serverIface.requestHandler()
         params = self.request.parameterMap( )
 
@@ -69,12 +76,8 @@ class atlasprintFilter(QgsServerFilter):
         if params['SERVICE'].lower() != 'wms':
             return
 
-        # Check if getprint request with atlas parameter
-        if 'REQUEST' not in params or params['REQUEST'].lower() != 'getprint':
-            return
-
-        # Check if atlas has been asked
-        if 'ATLAS' not in params or params['ATLAS'] != 'true':
+        # Check if getprintatlas request. If not, just send the response
+        if 'REQUEST' not in params or params['REQUEST'].lower() != 'getprintatlas':
             return
 
         # Check if needed params are set
@@ -92,7 +95,18 @@ class atlasprintFilter(QgsServerFilter):
         self.feature_filter = params['EXP_FILTER']
 
         # check expression
-        # todo
+        qExp = QgsExpression(self.feature_filter)
+        if not qExp.hasParserError():
+            qReq = QgsFeatureRequest(qExp)
+            ok = True
+        else:
+            body = {
+                'status': 'fail',
+                'message': 'An error occured while parsing the given expression: %s' % qExp.parserErrorString()
+            }
+            syslog.syslog(syslog.LOG_ERR, "ATLAS - ERROR EXPRESSION: %s" % qExp.parserErrorString())
+            self.setJsonResponse( '200', body)
+            return
 
         pdf = self.print_atlas(
             project_path=self.project_path,
@@ -100,6 +114,15 @@ class atlasprintFilter(QgsServerFilter):
             predefined_scales=self.predefined_scales,
             feature_filter=self.feature_filter
         )
+
+        if not pdf:
+            body = {
+                'status': 'fail',
+                'message': 'ATLAS - Error while generating the PDF'
+            }
+            syslog.syslog(syslog.LOG_ERR, "ATLAS - No PDF generated in %s" % pdf)
+            self.setJsonResponse( '200', body)
+            return
 
         # Send PDF
         self.request.clearHeaders()
@@ -112,20 +135,19 @@ class atlasprintFilter(QgsServerFilter):
                 loads = f.readlines()
             ba = QByteArray(b''.join(loads))
             self.request.appendBody(ba)
-            return
         except:
             body = {
                 'status': 'fail',
                 'message': 'Error occured while reading PDF file',
             }
             self.setJsonResponse( '200', body)
-            return
         finally:
             os.remove(pdf)
+            return
 
 
 
-    def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None, ):
+    def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None ):
 
         # Get composer from project
         # in QGIS 2, canno get composers without iface
@@ -196,20 +218,11 @@ class atlasprintFilter(QgsServerFilter):
                 tempfile.gettempdir(),
                 '%s_%s.pdf' % (atlas.nameForPage(i), uid)
             )
-            composition.exportAsPDF(export_path)
-
+            exported = composition.exportAsPDF(export_path)
+            if not exported or not os.path.isfile(export_path):
+                return None
             break
+
         atlas.endRender()
 
         return export_path
-
-
-
-    def requestReady(self):
-        QgsMessageLog.logMessage("atlasprintFilter.requestReady")
-
-    def sendResponse(self):
-        QgsMessageLog.logMessage("atlasprintFilter.sendResponse")
-
-    def responseComplete(self):
-        QgsMessageLog.logMessage("atlasprintFilter.responseComplete")
