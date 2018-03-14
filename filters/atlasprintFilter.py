@@ -40,7 +40,10 @@ class atlasprintFilter(QgsServerFilter):
         self.project_path = None
         self.debug_mode = True
         self.composer_name = None
-        self.predefined_scales = [1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000]
+        self.predefined_scales = [
+            500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000,
+            2500000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000
+        ]
         self.page_name_expression = None
         self.feature_filter = None
 
