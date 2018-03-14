@@ -28,8 +28,11 @@ import json, os, sys
 import tempfile
 import syslog
 from uuid import uuid4
+import ConfigParser
 
 class atlasprintFilter(QgsServerFilter):
+
+    metadata = {}
 
     def __init__(self, serverIface):
         QgsMessageLog.logMessage("atlasprintFilter.init")
@@ -47,6 +50,8 @@ class atlasprintFilter(QgsServerFilter):
         self.page_name_expression = None
         self.feature_filter = None
 
+        self.getMetadata()
+
         self.tempdir = os.path.join( tempfile.gettempdir(), 'qgis_atlas_print' )
         if not os.path.exists(self.tempdir):
             os.mkdir( self.tempdir )
@@ -54,6 +59,19 @@ class atlasprintFilter(QgsServerFilter):
 
         #syslog.syslog(syslog.LOG_ERR, "ATLAS - INITIALIZE")
 
+    def getMetadata(self):
+        '''
+        Get plugin metadata
+        '''
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        mfile = os.path.join(dir_path, '../metadata.txt')
+        if os.path.isfile(mfile):
+            config = ConfigParser.ConfigParser()
+            config.read(mfile)
+            self.metadata = {
+                'name': config.get('general', 'name'),
+                'version': config.get('general', 'version')
+            }
 
     def setJsonResponse(self, status, body):
         '''
@@ -80,7 +98,16 @@ class atlasprintFilter(QgsServerFilter):
             return
 
         # Check if getprintatlas request. If not, just send the response
-        if 'REQUEST' not in params or params['REQUEST'].lower() != 'getprintatlas':
+        if 'REQUEST' not in params or params['REQUEST'].lower() not in ['getprintatlas', 'getcapabilitiesatlas']:
+            return
+
+        # Get capabilities
+        if params['REQUEST'].lower() == 'getcapabilitiesatlas':
+            body = {
+                'status': 'success',
+                'metadata': self.metadata
+            }
+            self.setJsonResponse( '200', body)
             return
 
         # Check if needed params are set
