@@ -52,11 +52,6 @@ class atlasprintFilter(QgsServerFilter):
 
         self.getMetadata()
 
-        self.tempdir = os.path.join( tempfile.gettempdir(), 'qgis_atlas_print' )
-        if not os.path.exists(self.tempdir):
-            os.mkdir( self.tempdir )
-        QgsMessageLog.logMessage("atlasprintFilter.tempdir: %s" % self.tempdir)
-
         #syslog.syslog(syslog.LOG_ERR, "ATLAS - INITIALIZE")
 
     def getMetadata(self):
@@ -138,19 +133,22 @@ class atlasprintFilter(QgsServerFilter):
             self.setJsonResponse( '200', body)
             return
 
-        pdf = self.print_atlas(
-            project_path=self.project_path,
-            composer_name=self.composer_name,
-            predefined_scales=self.predefined_scales,
-            feature_filter=self.feature_filter
-        )
+        try:
+            pdf = self.print_atlas(
+                project_path=self.project_path,
+                composer_name=self.composer_name,
+                predefined_scales=self.predefined_scales,
+                feature_filter=self.feature_filter
+            )
+        except:
+            pdf = None
 
         if not pdf:
             body = {
                 'status': 'fail',
                 'message': 'ATLAS - Error while generating the PDF'
             }
-            syslog.syslog(syslog.LOG_ERR, "ATLAS - No PDF generated in %s" % pdf)
+            QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf)
             self.setJsonResponse( '200', body)
             return
 
@@ -163,8 +161,8 @@ class atlasprintFilter(QgsServerFilter):
         try:
             with open(pdf, 'rb') as f:
                 loads = f.readlines()
-            ba = QByteArray(b''.join(loads))
-            self.request.appendBody(ba)
+                ba = QByteArray(b''.join(loads))
+                self.request.appendBody(ba)
         except:
             body = {
                 'status': 'fail',
@@ -173,7 +171,9 @@ class atlasprintFilter(QgsServerFilter):
             self.setJsonResponse( '200', body)
         finally:
             os.remove(pdf)
-            return
+
+        return
+
 
 
 
@@ -195,7 +195,7 @@ class atlasprintFilter(QgsServerFilter):
                 )
 
         if not composer_xml:
-            return
+            return None
 
         document = QDomDocument()
         document.setContent(composer_xml)
@@ -227,7 +227,8 @@ class atlasprintFilter(QgsServerFilter):
 
         # get project scales
         atlas.setPredefinedScales(predefined_scales)
-        atlas.setComposerMap(atlas_map)
+        atlas_map.setAtlasDriven(True)
+        #atlas.setComposerMap(atlas_map)
 
         #on definit le filtre
         if feature_filter:
@@ -252,7 +253,8 @@ class atlasprintFilter(QgsServerFilter):
             if not exported or not os.path.isfile(export_path):
                 return None
             break
-
         atlas.endRender()
 
+        if os.path.isfile(export_path):
+            QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path)
         return export_path
