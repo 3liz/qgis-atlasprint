@@ -123,6 +123,7 @@ class atlasprintFilter(QgsServerFilter):
         qExp = QgsExpression(self.feature_filter)
         if not qExp.hasParserError():
             qReq = QgsFeatureRequest(qExp)
+            qReq.setLimit(1)
             ok = True
         else:
             body = {
@@ -179,6 +180,10 @@ class atlasprintFilter(QgsServerFilter):
 
     def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None ):
 
+        if not feature_filter:
+            QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !")
+            return None
+
         # Get composer from project
         # in QGIS 2, canno get composers without iface
         # so we reading project xml and extract composer
@@ -195,6 +200,7 @@ class atlasprintFilter(QgsServerFilter):
                 )
 
         if not composer_xml:
+            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !")
             return None
 
         document = QDomDocument()
@@ -222,6 +228,7 @@ class atlasprintFilter(QgsServerFilter):
         # Get atlas for this composition
         atlas = composition.atlasComposition()
         atlas.setEnabled(True)
+
         atlas_map = composition.getComposerMapById(0)
         atlas_map.setAtlasScalingMode( QgsComposerMap.Predefined )
 
@@ -230,29 +237,53 @@ class atlasprintFilter(QgsServerFilter):
         atlas_map.setAtlasDriven(True)
         #atlas.setComposerMap(atlas_map)
 
-        #on definit le filtre
-        if feature_filter:
-            atlas.setFilterFeatures(True)
-            atlas.setFeatureFilter(feature_filter)
         if page_name_expression:
             atlas.setPageNameExpression(page_name_expression)
 
-        # Set atlas mode
-        composition.setAtlasMode(QgsComposition.ExportAtlas)
+        # Filter feature here to avoid QGIS looping through every feature when doing : composition.setAtlasMode(QgsComposition.ExportAtlas)
+        coverageLayer = atlas.coverageLayer()
 
-        # Generate atlas
-        atlas.beginRender()
+        # Filter by FID as QGIS cannot compile expressions with $id or other $ vars
+        # which leads to bad perfs for big datasets
+        useFid = None
+        if '$id' in feature_filter:
+            import re
+            ids = map(int, re.findall(r'\d+', feature_filter))
+            if len(ids) > 0:
+                useFid = ids[0]
+        if useFid:
+            qReq = QgsFeatureRequest().setFilterFid(useFid)
+        else:
+            qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
+
+        # Change feature_filter in order to improve perfs
+        pks = coverageLayer.dataProvider().pkAttributeIndexes()
+        if useFid and len(pks) == 1:
+            pk = coverageLayer.dataProvider().fields()[pks[0]].name()
+            feature_filter = '"%s" = %s' % (pk, useFid)
+            QgsMessageLog.logMessage("atlasprint: feature_filter changed into: %s" % feature_filter)
+        atlas.setFilterFeatures(True)
+        atlas.setFeatureFilter(feature_filter)
         uid = uuid4()
-        for i in range(0, atlas.numFeatures()):
-            atlas.prepareForFeature( i )
+        i = 0
+
+        # Set Atlas mode
+        composition.setAtlasMode(QgsComposition.ExportAtlas)
+        atlas.beginRender()
+
+        for feat in coverageLayer.getFeatures(qReq):
+            atlas.prepareForFeature(feat)
             export_path = os.path.join(
                 tempfile.gettempdir(),
                 '%s_%s.pdf' % (atlas.nameForPage(i), uid)
             )
             exported = composition.exportAsPDF(export_path)
             if not exported or not os.path.isfile(export_path):
+                QgsMessageLog.logMessage("atlasprint: An error occured while exporting the atlas !")
                 return None
+
             break
+
         atlas.endRender()
 
         if os.path.isfile(export_path):
