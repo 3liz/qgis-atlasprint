@@ -260,8 +260,9 @@ class atlasprintFilter(QgsServerFilter):
         pks = coverageLayer.dataProvider().pkAttributeIndexes()
         if useFid and len(pks) == 1:
             pk = coverageLayer.dataProvider().fields()[pks[0]].name()
-            feature_filter = '"%s" = %s' % (pk, useFid)
+            feature_filter = '"%s" IN (%s)' % (pk, useFid)
             QgsMessageLog.logMessage("atlasprint: feature_filter changed into: %s" % feature_filter)
+            qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
         atlas.setFeatureFilter(feature_filter)
         uid = uuid4()
