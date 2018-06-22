@@ -12,7 +12,7 @@ Installation
 We assume you have a fully functionnal QGIS Server.
 See https://docs.qgis.org/2.18/en/docs/user_manual/working_with_ogc/server/index.html
 
-We need to download the plugin, and tell QGIS Server where the plugins are stored, the reload the web server.
+We need to download the plugin, and tell QGIS Server where the plugins are stored, then reload the web server.
 For example on Debian:
 
 ```
