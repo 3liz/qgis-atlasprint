@@ -10,7 +10,7 @@
 name=atlasprint
 qgisMinimumVersion=2.14
 description=Add atlas capability for getPrint request
-version=1.0.0
+version=1.1.0
 author=DOUCHIN Michaël (3Liz)
 email=mdouchin@3liz.com
 ; if True it's a server plugin
