@@ -23,23 +23,26 @@ __author__ = 'DOUCHIN Michaël'
 __date__ = 'October 2017'
 __copyright__ = '(C) 2017, DOUCHIN Michaël - 3Liz'
 
-from qgis.core import QgsMessageLog, QgsLogger
-from qgis.server import *
-
-import os.path
+from qgis.core import Qgis, QgsMessageLog
 
 class atlasprintServer:
     """Plugin for QGIS server
     this plugin loads atlasprint filter"""
 
-    def __init__(self, serverIface):
+    def __init__(self, serverIface: 'QgsServerInterface') -> None:
         # Save reference to the QGIS server interface
         self.serverIface = serverIface
-        QgsMessageLog.logMessage("SUCCESS - atlasprint init", 'plugin', QgsMessageLog.INFO)
+        QgsMessageLog.logMessage("SUCCESS - atlasprint init", 'atlasprint', Qgis.Info)
 
-        from filters.atlasprintFilter import atlasprintFilter
+        from .filters.atlasprintFilter import atlasprintFilter
         try:
             serverIface.registerFilter( atlasprintFilter(serverIface), 50 )
-        except Exception, e:
-            QgsLogger.debug("atlasprint - Error loading filter atlasprint : %s" % e )
+        except Exception as e:
+            QgsMessageLog.logMessage("atlasprint - Error loading filter atlasprint : %s" % e, 'atlasprint', Qgis.Critical)
+
+    def create_filter(self):
+        """ Create a new filter instance - Used for tests
+        """
+        from .filters.atlasprintFilter import atlasprintFilter
+        return atlasprintFilter(self.serverIface)
 

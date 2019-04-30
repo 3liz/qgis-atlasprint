@@ -19,11 +19,6 @@
  ***************************************************************************/
  This script initializes the plugin, making it known to QGIS and QGIS Server.
 """
-try:
-    from qgis.server import *
-except:
-    pass
-
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
@@ -43,6 +38,6 @@ def serverClassFactory(serverIface):  # pylint: disable=invalid-name
     :param iface: A QGIS Server interface instance.
     :type iface: QgsServerInterface
     """
-    #
     from .atlasprintServer import atlasprintServer
     return atlasprintServer(serverIface)
+

@@ -19,26 +19,30 @@
 """
 
 import os, time, tempfile
-from qgis.server import *
+from qgis.server import QgsServerFilter
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
-from qgis.core import QgsApplication, QgsProject, QgsComposition, QgsComposerMap, QgsMessageLog, QgsLogger, QgsExpression, QgsFeatureRequest
-from PyQt4.QtCore import QFileInfo, QByteArray
-from PyQt4.QtXml import QDomDocument
+from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsExpression, QgsFeatureRequest
+from qgis.core import QgsLayout, QgsPrintLayout, QgsReadWriteContext, QgsLayoutItemMap, QgsLayoutExporter
+from qgis.PyQt.QtCore import QFileInfo, QByteArray
+from qgis.PyQt.QtXml import QDomDocument
 import json, os, sys
 import tempfile
 import syslog
 from uuid import uuid4
-import ConfigParser
+
+from pathlib import Path
+from configparser import ConfigParser
 
 class atlasprintFilter(QgsServerFilter):
 
     metadata = {}
 
     def __init__(self, serverIface):
-        QgsMessageLog.logMessage("atlasprintFilter.init")
+        QgsMessageLog.logMessage("atlasprintFilter.init", 'atlasprint', Qgis.Info)
         super(atlasprintFilter, self).__init__(serverIface)
+
         self.serverIface = serverIface
-        self.request = None
+        self.handler = None
         self.project = None
         self.project_path = None
         self.debug_mode = True
@@ -58,10 +62,9 @@ class atlasprintFilter(QgsServerFilter):
         '''
         Get plugin metadata
         '''
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        mfile = os.path.join(dir_path, '../metadata.txt')
+        mfile = str(Path(__file__).resolve().parent.parent / 'metadata.txt')
         if os.path.isfile(mfile):
-            config = ConfigParser.ConfigParser()
+            config = ConfigParser()
             config.read(mfile)
             self.metadata = {
                 'name': config.get('general', 'name'),
@@ -72,20 +75,17 @@ class atlasprintFilter(QgsServerFilter):
         '''
         Set response with given parameters
         '''
-        self.request.clearHeaders()
-        self.request.setInfoFormat('text/json')
-        self.request.setHeader('Content-type', 'text/json')
-        self.request.setHeader('Status', status)
-        self.request.clearBody()
-        self.request.appendBody( json.dumps( body ) )
-
+        self.handler.clear()
+        self.handler.setResponseHeader('Content-type', 'text/json')
+        self.handler.setResponseHeader('Status', status)
+        self.handler.appendBody( json.dumps( body ).encode('utf-8') )
 
     def responseComplete(self):
         '''
         Send new response
         '''
-        self.request = self.serverIface.requestHandler()
-        params = self.request.parameterMap( )
+        self.handler = self.serverIface.requestHandler()
+        params = self.handler.parameterMap( )
 
         # Check if needed params are passed
         # If not, do not change QGIS Server response
@@ -149,21 +149,19 @@ class atlasprintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'ATLAS - Error while generating the PDF'
             }
-            QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf)
+            QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf, 'atlasprint', Qgis.Info)
             self.setJsonResponse( '200', body)
             return
 
         # Send PDF
-        self.request.clearHeaders()
-        self.request.setInfoFormat('application/pdf')
-        self.request.setHeader('Content-type', 'application/pdf')
-        self.request.setHeader('Status', '200')
-        self.request.clearBody()
+        self.handler.clear()
+        self.handler.setResponseHeader('Content-type', 'application/pdf')
+        self.handler.setResponseHeader('Status', '200')
         try:
             with open(pdf, 'rb') as f:
                 loads = f.readlines()
                 ba = QByteArray(b''.join(loads))
-                self.request.appendBody(ba)
+                self.handler.appendBody(ba)
         except:
             body = {
                 'status': 'fail',
@@ -179,9 +177,8 @@ class atlasprintFilter(QgsServerFilter):
 
 
     def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None ):
-
         if not feature_filter:
-            QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !")
+            QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Info)
             return None
 
         # Get composer from project
@@ -198,9 +195,16 @@ class atlasprintFilter(QgsServerFilter):
                     encoding='utf8',
                     method='xml'
                 )
+            if not composer_xml:
+                for elem in tree.findall('.//Layout[@name="%s"]' % composer_name):
+                    composer_xml = ET.tostring(
+                        elem,
+                        encoding='utf8',
+                        method='xml'
+                    )
 
         if not composer_xml:
-            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !")
+            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !", 'atlasprint', Qgis.Info)
             return None
 
         document = QDomDocument()
@@ -209,33 +213,30 @@ class atlasprintFilter(QgsServerFilter):
 
         # Get canvas, map setting & instantiate composition
         canvas = QgsMapCanvas()
-        QgsProject.instance().read(QFileInfo(project_path))
+        project = QgsProject()
+        project.read(project_path)
         bridge = QgsLayerTreeMapCanvasBridge(
-            QgsProject.instance().layerTreeRoot(),
+            project.layerTreeRoot(),
             canvas
         )
         bridge.setCanvasLayers()
-        ms = canvas.mapSettings()
-        composition = QgsComposition(ms)
+
+        layout = QgsPrintLayout(project)
 
         # Load content from XML
-        substitution_map = {}
-        composition.loadFromTemplate(
+        layout.loadFromTemplate(
             document,
-            substitution_map
+            QgsReadWriteContext(),
         )
 
-        # Get atlas for this composition
-        atlas = composition.atlasComposition()
+        atlas = layout.atlas()
         atlas.setEnabled(True)
 
-        atlas_map = composition.getComposerMapById(0)
-        atlas_map.setAtlasScalingMode( QgsComposerMap.Predefined )
-
-        # get project scales
-        atlas.setPredefinedScales(predefined_scales)
+        atlas_map = layout.referenceMap()
         atlas_map.setAtlasDriven(True)
-        #atlas.setComposerMap(atlas_map)
+        atlas_map.setAtlasScalingMode( QgsLayoutItemMap.Predefined )
+
+        layout.reportContext().setPredefinedScales(predefined_scales)
 
         if page_name_expression:
             atlas.setPageNameExpression(page_name_expression)
@@ -248,7 +249,7 @@ class atlasprintFilter(QgsServerFilter):
         useFid = None
         if '$id' in feature_filter:
             import re
-            ids = map(int, re.findall(r'\d+', feature_filter))
+            ids = list(map(int, re.findall(r'\d+', feature_filter)))
             if len(ids) > 0:
                 useFid = ids[0]
         if useFid:
@@ -261,32 +262,33 @@ class atlasprintFilter(QgsServerFilter):
         if useFid and len(pks) == 1:
             pk = coverageLayer.dataProvider().fields()[pks[0]].name()
             feature_filter = '"%s" IN (%s)' % (pk, useFid)
-            QgsMessageLog.logMessage("atlasprint: feature_filter changed into: %s" % feature_filter)
+            QgsMessageLog.logMessage("atlasprint: feature_filter changed into: %s" % feature_filter, 'atlasprint', Qgis.Info)
             qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
-        atlas.setFeatureFilter(feature_filter)
+        atlas.setFilterExpression(feature_filter)
         uid = uuid4()
         i = 0
 
-        # Set Atlas mode
-        composition.setAtlasMode(QgsComposition.ExportAtlas)
         atlas.beginRender()
+        atlas.seekTo(i)
 
-        for feat in coverageLayer.getFeatures(qReq):
-            atlas.prepareForFeature(feat)
-            export_path = os.path.join(
+        # setup settings
+        settings = QgsLayoutExporter.PdfExportSettings()
+        export_path = os.path.join(
                 tempfile.gettempdir(),
                 '%s_%s.pdf' % (atlas.nameForPage(i), uid)
-            )
-            exported = composition.exportAsPDF(export_path)
-            if not exported or not os.path.isfile(export_path):
-                QgsMessageLog.logMessage("atlasprint: An error occured while exporting the atlas !")
-                return None
-
-            break
+        )
+        exporter = QgsLayoutExporter(layout)
+        result = exporter.exportToPdf(export_path, settings)
 
         atlas.endRender()
+        if result != QgsLayoutExporter.Success:
+            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Info)
+            return None
 
-        if os.path.isfile(export_path):
-            QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path)
+        if not os.path.isfile(export_path):
+            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Info)
+            return None
+
+        QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path, 'atlasprint', Qgis.Info)
         return export_path
