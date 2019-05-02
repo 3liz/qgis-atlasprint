@@ -115,7 +115,7 @@ class atlasprintFilter(QgsServerFilter):
             return
 
 
-        self.project_path = params['MAP']
+        self.project_path = self.serverInterface().configFilePath()
         self.composer_name = params['TEMPLATE']
         self.feature_filter = params['EXP_FILTER']
 
