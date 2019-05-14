@@ -7,4 +7,3 @@ help/* export-ignore
 build/* export-ignore
 Makefile export-ignore
 pylintrc export-ignore
-atlasprint_dialog_base.ui export-ignore

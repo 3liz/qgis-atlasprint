@@ -12,7 +12,7 @@ main:
 	echo "Makefile for packaging infra components: select a task"
 
 PACKAGE=qgis_atlasprint
-FILES = ../filters ../i18n ../scripts ../*.py ../*.qrc ../icon.png ../metadata.txt ../README.md
+FILES = ../filters ../i18n ../scripts ../*.py ../*.qrc ../*.ui ../icon.png ../metadata.txt ../README.md
 
 
 build2/atlasprint:
