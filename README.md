@@ -1,4 +1,4 @@
-atlasprint: QGIS Server Plugin to export PDF from composer with atlas capabilities
+atlasprint: QGIS2 Server Plugin to export PDF from composer with atlas capabilities
 ==========================================================================================
 
 Description
