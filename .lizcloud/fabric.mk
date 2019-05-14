@@ -21,7 +21,7 @@ build2/atlasprint:
 
 .PHONY: package
 package: build2/atlasprint
-	@echo "Building package qgis3_atlasprint"
+	@echo "Building package $(PACKAGE)"
 	@cp -rLp $(FILES) build2/atlasprint/
-	$(FABRIC) package:qgis3_atlasprint,versiontag=$(VERSION),files=atlasprint,directory=./build2
+	$(FABRIC) package:$(PACKAGE),versiontag=$(VERSION),files=atlasprint,directory=./build2
 
