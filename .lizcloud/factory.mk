@@ -9,7 +9,7 @@ main:
 
 PACKAGE=qgis_atlasplugin
 FILES = ../filters ../i18n ../scripts ../*.py ../*.qrc ../icon.png ../metadata.txt ../README.md
-PACKAGEDIR=atlasplugin
+PACKAGEDIR=atlasprint
 
 build3/$(PACKAGEDIR):
 	@rm -rf build3/$(PACKAGEDIR)
