@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/plugins/atlasprint" >
-        <file>icon.png</file>
-    </qresource>
-</RCC>

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 ***************************************************************************
     QGIS Server Plugin Filters: Add a new request to print a specific atlas

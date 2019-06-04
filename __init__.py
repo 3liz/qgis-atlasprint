@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 /***************************************************************************
     QGIS Server Plugin Filters: Add a new request to print a specific atlas
@@ -20,18 +19,8 @@
  This script initializes the plugin, making it known to QGIS and QGIS Server.
 """
 
-# noinspection PyPep8Naming
-def classFactory(iface):  # pylint: disable=invalid-name
-    """Load atlasprint class from file atlasprint.
 
-    :param iface: A QGIS interface instance.
-    :type iface: QgsInterface
-    """
-    #
-    from .atlasprint import atlasprint
-    return atlasprint(iface)
-
-
+# Server Plugin only
 def serverClassFactory(serverIface):  # pylint: disable=invalid-name
     """Load atlasprintServer class from file atlasprint.
 
