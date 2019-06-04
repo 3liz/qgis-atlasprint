@@ -28,6 +28,8 @@ deploy_snap_3:
     - $FACTORY_SCRIPTS/deploy-package $FACTORY_PACKAGE_NAME
   environment:
     name: snap
+  dependencies:
+      - build_3
   tags:
     - infrav3
 
@@ -37,6 +39,8 @@ release_prod_3:
     - $FACTORY_SCRIPTS/release_package $FACTORY_PACKAGE_NAME
   environment:
     name: production
+  dependencies:
+      - build_3
   when: manual
   only:
     - tags
@@ -58,6 +62,8 @@ deploy_snap_2:
     - sudo -u fabric fab snap deploy:qgis3_atlasprint,force=true
   environment:
     name: snap
+  dependencies:
+      - build_2
   tags:
     - fabric
 
@@ -67,8 +73,11 @@ release_prod_2:
     - sudo -u fabric fab prod release:qgis3_atlasprint
   environment:
     name: production
+  dependencies:
+      - build_2
   when: manual
   only:
     - tags
   tags:
     - fabric
+
