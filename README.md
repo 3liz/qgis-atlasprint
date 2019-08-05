@@ -22,7 +22,7 @@ mkdir -p /srv/qgis/plugins
 cd /srv/qgis/plugins
 wget "https://github.com/3liz/qgis-atlasprint/archive/master.zip"
 unzip master.zip
-mv qgis-atlasprint-master atlastprint
+mv qgis-atlasprint-master atlasprint
 
 # Make sure correct environment variables are set in your web server configuration
 # for example in Apache2 with mod_fcgid
