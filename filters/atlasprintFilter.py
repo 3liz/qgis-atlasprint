@@ -179,7 +179,7 @@ class AtlasPrintFilter(QgsServerFilter):
         return
 
     @staticmethod
-    def print_atlas(project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None):
+    def print_atlas(project_path, composer_name, predefined_scales, feature_filter, page_name_expression=None):
         if not feature_filter:
             QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Critical)
             return None
@@ -187,7 +187,7 @@ class AtlasPrintFilter(QgsServerFilter):
         # Get composer from project
         # in QGIS 2, we can't get composers without iface
         # so we reading project xml and extract composer
-        # in QGIS 3.0, we will use project layoutManager()
+        # TODO Since QGIS 3.0, we should be able to use project layoutManager()
         # noinspection PyPep8Naming
         from xml.etree import ElementTree as ET
         composer_xml = None
@@ -270,7 +270,7 @@ class AtlasPrintFilter(QgsServerFilter):
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
         uid = uuid4()
-        i = 0
+        i = 0  # We use a single page for now.
 
         atlas.beginRender()
         atlas.seekTo(i)
