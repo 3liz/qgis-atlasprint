@@ -16,14 +16,8 @@
 ***************************************************************************
 """
 
-import os, time, tempfile
-from qgis.server import QgsServerFilter
-from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
-from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsExpression, QgsFeatureRequest
-from qgis.core import QgsLayout, QgsPrintLayout, QgsReadWriteContext, QgsLayoutItemMap, QgsLayoutExporter
-from qgis.PyQt.QtCore import QFileInfo, QByteArray
-from qgis.PyQt.QtXml import QDomDocument
-import json, os, sys
+import json
+import os
 import tempfile
 import syslog
 from uuid import uuid4
@@ -31,13 +25,21 @@ from uuid import uuid4
 from pathlib import Path
 from configparser import ConfigParser
 
-class atlasprintFilter(QgsServerFilter):
+from qgis.server import QgsServerFilter
+from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
+from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsExpression, QgsFeatureRequest
+from qgis.core import QgsPrintLayout, QgsReadWriteContext, QgsLayoutItemMap, QgsLayoutExporter
+from qgis.PyQt.QtCore import QByteArray
+from qgis.PyQt.QtXml import QDomDocument
+
+
+class AtlasPrintFilter(QgsServerFilter):
 
     metadata = {}
 
     def __init__(self, serverIface):
         QgsMessageLog.logMessage("atlasprintFilter.init", 'atlasprint', Qgis.Info)
-        super(atlasprintFilter, self).__init__(serverIface)
+        super(AtlasPrintFilter, self).__init__(serverIface)
 
         self.serverIface = serverIface
         self.handler = None
@@ -54,12 +56,12 @@ class atlasprintFilter(QgsServerFilter):
 
         self.getMetadata()
 
-        #syslog.syslog(syslog.LOG_ERR, "ATLAS - INITIALIZE")
+        # syslog.syslog(syslog.LOG_ERR, "ATLAS - INITIALIZE")
 
     def getMetadata(self):
-        '''
+        """
         Get plugin metadata
-        '''
+        """
         mfile = str(Path(__file__).resolve().parent.parent / 'metadata.txt')
         if os.path.isfile(mfile):
             config = ConfigParser()
@@ -70,24 +72,28 @@ class atlasprintFilter(QgsServerFilter):
             }
 
     def setJsonResponse(self, status, body):
-        '''
+        """
         Set response with given parameters
-        '''
+        """
         self.handler.clear()
         self.handler.setResponseHeader('Content-type', 'text/json')
         self.handler.setResponseHeader('Status', status)
-        self.handler.appendBody( json.dumps( body ).encode('utf-8') )
+        self.handler.appendBody(json.dumps(body).encode('utf-8'))
 
     def responseComplete(self):
-        '''
+        """
         Send new response
-        '''
+        """
         self.handler = self.serverIface.requestHandler()
-        params = self.handler.parameterMap( )
+        params = self.handler.parameterMap()
 
         # Check if needed params are passed
         # If not, do not change QGIS Server response
-        if params['SERVICE'].lower() != 'wms':
+        service = params.get('SERVICE')
+        if not service:
+            return
+
+        if service.lower() != 'wms':
             return
 
         # Check if getprintatlas request. If not, just send the response
@@ -100,7 +106,7 @@ class atlasprintFilter(QgsServerFilter):
                 'status': 'success',
                 'metadata': self.metadata
             }
-            self.setJsonResponse( '200', body)
+            self.setJsonResponse('200', body)
             return
 
         # Check if needed params are set
@@ -109,9 +115,8 @@ class atlasprintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'Missing parameters: TEMPLATE, FORMAT, DPI, MAP, EXP_FILTER are required '
             }
-            self.setJsonResponse( '200', body)
+            self.setJsonResponse('200', body)
             return
-
 
         self.project_path = self.serverInterface().configFilePath()
         self.composer_name = params['TEMPLATE']
@@ -129,7 +134,7 @@ class atlasprintFilter(QgsServerFilter):
                 'message': 'An error occured while parsing the given expression: %s' % qExp.parserErrorString()
             }
             syslog.syslog(syslog.LOG_ERR, "ATLAS - ERROR EXPRESSION: %s" % qExp.parserErrorString())
-            self.setJsonResponse( '200', body)
+            self.setJsonResponse('200', body)
             return
 
         try:
@@ -171,22 +176,19 @@ class atlasprintFilter(QgsServerFilter):
 
         return
 
-
-
-
-    def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None ):
+    def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None):
         if not feature_filter:
             QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Info)
             return None
 
         # Get composer from project
-        # in QGIS 2, canno get composers without iface
+        # in QGIS 2, we can't get composers without iface
         # so we reading project xml and extract composer
-        # in QGIS 3.0, we will use  project layoutManager()
+        # in QGIS 3.0, we will use project layoutManager()
         from xml.etree import ElementTree as ET
         composer_xml = None
         with open(project_path, 'r') as f:
-            tree  = ET.parse(f)
+            tree = ET.parse(f)
             for elem in tree.findall('.//Composer[@title="%s"]' % composer_name):
                 composer_xml = ET.tostring(
                     elem,
@@ -207,7 +209,6 @@ class atlasprintFilter(QgsServerFilter):
 
         document = QDomDocument()
         document.setContent(composer_xml)
-
 
         # Get canvas, map setting & instantiate composition
         canvas = QgsMapCanvas()
