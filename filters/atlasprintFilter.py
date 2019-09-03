@@ -110,7 +110,8 @@ class AtlasPrintFilter(QgsServerFilter):
             return
 
         # Check if needed params are set
-        if 'TEMPLATE' not in params or 'FORMAT' not in params or 'DPI' not in params or 'MAP' not in params or 'EXP_FILTER' not in params:
+        required = ['TEMPLATE', 'FORMAT', 'DPI', 'MAP', 'EXP_FILTER']
+        if not all(elem in params for elem in required):
             body = {
                 'status': 'fail',
                 'message': 'Missing parameters: TEMPLATE, FORMAT, DPI, MAP, EXP_FILTER are required '
@@ -123,20 +124,20 @@ class AtlasPrintFilter(QgsServerFilter):
         self.feature_filter = params['EXP_FILTER']
 
         # check expression
-        qExp = QgsExpression(self.feature_filter)
-        if not qExp.hasParserError():
-            qReq = QgsFeatureRequest(qExp)
-            qReq.setLimit(1)
-            ok = True
+        expression = QgsExpression(self.feature_filter)
+        if not expression.hasParserError():
+            feature_request = QgsFeatureRequest(expression)
+            feature_request.setLimit(1)
         else:
             body = {
                 'status': 'fail',
-                'message': 'An error occured while parsing the given expression: %s' % qExp.parserErrorString()
+                'message': 'An error occurred while parsing the given expression: %s' % expression.parserErrorString()
             }
-            syslog.syslog(syslog.LOG_ERR, "ATLAS - ERROR EXPRESSION: %s" % qExp.parserErrorString())
+            syslog.syslog(syslog.LOG_ERR, "ATLAS - ERROR EXPRESSION: %s" % expression.parserErrorString())
             self.setJsonResponse('200', body)
             return
 
+        # noinspection PyBroadException
         try:
             pdf = self.print_atlas(
                 project_path=self.project_path,
@@ -144,7 +145,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 predefined_scales=self.predefined_scales,
                 feature_filter=self.feature_filter
             )
-        except:
+        except Exception:
             pdf = None
 
         if not pdf:
@@ -153,30 +154,33 @@ class AtlasPrintFilter(QgsServerFilter):
                 'message': 'ATLAS - Error while generating the PDF'
             }
             QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf, 'atlasprint', Qgis.Info)
-            self.setJsonResponse( '200', body)
+            self.setJsonResponse('200', body)
             return
 
         # Send PDF
         self.handler.clear()
         self.handler.setResponseHeader('Content-type', 'application/pdf')
         self.handler.setResponseHeader('Status', '200')
+
+        # noinspection PyBroadException
         try:
             with open(pdf, 'rb') as f:
                 loads = f.readlines()
                 ba = QByteArray(b''.join(loads))
                 self.handler.appendBody(ba)
-        except:
+        except Exception:
             body = {
                 'status': 'fail',
                 'message': 'Error occured while reading PDF file',
             }
-            self.setJsonResponse( '200', body)
+            self.setJsonResponse('200', body)
         finally:
             os.remove(pdf)
 
         return
 
-    def print_atlas(self, project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None):
+    @staticmethod
+    def print_atlas(project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None):
         if not feature_filter:
             QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Info)
             return None
@@ -185,6 +189,7 @@ class AtlasPrintFilter(QgsServerFilter):
         # in QGIS 2, we can't get composers without iface
         # so we reading project xml and extract composer
         # in QGIS 3.0, we will use project layoutManager()
+        # noinspection PyPep8Naming
         from xml.etree import ElementTree as ET
         composer_xml = None
         with open(project_path, 'r') as f:
@@ -233,7 +238,7 @@ class AtlasPrintFilter(QgsServerFilter):
 
         atlas_map = layout.referenceMap()
         atlas_map.setAtlasDriven(True)
-        atlas_map.setAtlasScalingMode( QgsLayoutItemMap.Predefined )
+        atlas_map.setAtlasScalingMode(QgsLayoutItemMap.Predefined)
 
         layout.reportContext().setPredefinedScales(predefined_scales)
 
@@ -241,26 +246,26 @@ class AtlasPrintFilter(QgsServerFilter):
             atlas.setPageNameExpression(page_name_expression)
 
         # Filter feature here to avoid QGIS looping through every feature when doing : composition.setAtlasMode(QgsComposition.ExportAtlas)
-        coverageLayer = atlas.coverageLayer()
+        coverage_layer = atlas.coverageLayer()
 
         # Filter by FID as QGIS cannot compile expressions with $id or other $ vars
-        # which leads to bad perfs for big datasets
-        useFid = None
+        # which leads to bad performance for big dataset
+        use_fid = None
         if '$id' in feature_filter:
             import re
             ids = list(map(int, re.findall(r'\d+', feature_filter)))
             if len(ids) > 0:
-                useFid = ids[0]
-        if useFid:
-            qReq = QgsFeatureRequest().setFilterFid(useFid)
+                use_fid = ids[0]
+        if use_fid:
+            qReq = QgsFeatureRequest().setFilterFid(use_fid)
         else:
             qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
 
-        # Change feature_filter in order to improve perfs
-        pks = coverageLayer.dataProvider().pkAttributeIndexes()
-        if useFid and len(pks) == 1:
-            pk = coverageLayer.dataProvider().fields()[pks[0]].name()
-            feature_filter = '"%s" IN (%s)' % (pk, useFid)
+        # Change feature_filter in order to improve performance
+        pks = coverage_layer.dataProvider().pkAttributeIndexes()
+        if use_fid and len(pks) == 1:
+            pk = coverage_layer.dataProvider().fields()[pks[0]].name()
+            feature_filter = '"%s" IN (%s)' % (pk, use_fid)
             QgsMessageLog.logMessage("atlasprint: feature_filter changed into: %s" % feature_filter, 'atlasprint', Qgis.Info)
             qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
