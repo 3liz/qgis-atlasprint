@@ -1,10 +1,10 @@
-##AtlasPrint: QGIS Server Plugin to export PDF from composer with atlas capabilities
+## AtlasPrint: QGIS Server Plugin to export PDF from composer with atlas capabilities
 
-###Description
+### Description
 
 This plugin adds a new request to QGIS 3 Server `getprintatlas` which allows to export a print composer with an atlas configured, but passing an expression parameter to choose which feature is the current atlas feature.
 
-###Installation
+### Installation
 
 We assume you have a fully functional QGIS Server with Xvfb. See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
 
