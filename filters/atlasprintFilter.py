@@ -19,7 +19,6 @@
 import json
 import os
 import tempfile
-import syslog
 from uuid import uuid4
 
 from pathlib import Path
@@ -56,7 +55,7 @@ class AtlasPrintFilter(QgsServerFilter):
 
         self.getMetadata()
 
-        # syslog.syslog(syslog.LOG_ERR, "ATLAS - INITIALIZE")
+        # QgsMessageLog.logMessage("atlasprintFilter end init", 'atlasprint', Qgis.Info)
 
     def getMetadata(self):
         """
@@ -116,7 +115,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'Missing parameters: TEMPLATE, FORMAT, DPI, MAP, EXP_FILTER are required '
             }
-            self.setJsonResponse('200', body)
+            self.setJsonResponse('400', body)
             return
 
         self.project_path = self.serverInterface().configFilePath()
@@ -133,8 +132,8 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'An error occurred while parsing the given expression: %s' % expression.parserErrorString()
             }
-            syslog.syslog(syslog.LOG_ERR, "ATLAS - ERROR EXPRESSION: %s" % expression.parserErrorString())
-            self.setJsonResponse('200', body)
+            QgsMessageLog.logMessage('ATLAS - ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
+            self.setJsonResponse('400', body)
             return
 
         # noinspection PyBroadException
@@ -153,8 +152,8 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'ATLAS - Error while generating the PDF'
             }
-            QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf, 'atlasprint', Qgis.Info)
-            self.setJsonResponse('200', body)
+            QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf, 'atlasprint', Qgis.Critical)
+            self.setJsonResponse('500', body)
             return
 
         # Send PDF
@@ -173,7 +172,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'Error occured while reading PDF file',
             }
-            self.setJsonResponse('200', body)
+            self.setJsonResponse('500', body)
         finally:
             os.remove(pdf)
 
@@ -182,7 +181,7 @@ class AtlasPrintFilter(QgsServerFilter):
     @staticmethod
     def print_atlas(project_path, composer_name, predefined_scales, feature_filter=None, page_name_expression=None):
         if not feature_filter:
-            QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Info)
+            QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Critical)
             return None
 
         # Get composer from project
@@ -209,7 +208,7 @@ class AtlasPrintFilter(QgsServerFilter):
                     )
 
         if not composer_xml:
-            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !", 'atlasprint', Qgis.Info)
+            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !", 'atlasprint', Qgis.Critical)
             return None
 
         document = QDomDocument()
@@ -287,12 +286,12 @@ class AtlasPrintFilter(QgsServerFilter):
 
         atlas.endRender()
         if result != QgsLayoutExporter.Success:
-            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Info)
+            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
             return None
 
         if not os.path.isfile(export_path):
-            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Info)
+            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
             return None
 
-        QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path, 'atlasprint', Qgis.Info)
+        QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path, 'atlasprint', Qgis.Success)
         return export_path
