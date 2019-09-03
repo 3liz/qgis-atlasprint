@@ -109,11 +109,11 @@ class AtlasPrintFilter(QgsServerFilter):
             return
 
         # Check if needed params are set
-        required = ['TEMPLATE', 'FORMAT', 'DPI', 'MAP', 'EXP_FILTER']
+        required = ['TEMPLATE', 'EXP_FILTER']
         if not all(elem in params for elem in required):
             body = {
                 'status': 'fail',
-                'message': 'Missing parameters: TEMPLATE, FORMAT, DPI, MAP, EXP_FILTER are required '
+                'message': 'Missing parameters: {} are required.'.format(' '.join(required))
             }
             self.setJsonResponse('400', body)
             return

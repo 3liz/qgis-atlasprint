@@ -35,10 +35,8 @@ You can now test your installation.
 ### API
 
 This plugin adds some new requests to the WMS service:
-* `REQUEST=GETCAPABILITIESATLAS`
+* `REQUEST=GETCAPABILITIESATLAS`: Return the plugin version
 * `REQUEST=GETPRINTATLAS`
-  * `TEMPLATE`: **required**
-  * `FORMAT`: **required**
-  * `DPI`: **required**
-  * `MAP`: **required**
+  * `TEMPLATE`: **required**, name of the layout to use.
   * `EXP_FILTER`: **required**, it must be HTML escaped. For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
+  * `MAP`: QGIS Server can have the project information from different sources.
