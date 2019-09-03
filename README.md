@@ -1,20 +1,17 @@
-atlasprint: QGIS3 Server Plugin to export PDF from composer with atlas capabilities
-==========================================================================================
+##AtlasPrint: QGIS Server Plugin to export PDF from composer with atlas capabilities
 
-Description
------------
+###Description
 
 This plugin adds a new request to QGIS 3 Server `getprintatlas` which allows to export a print composer with an atlas configured, but passing an expression parameter to choose which feature is the current atlas feature.
 
-Installation
-------------
+###Installation
 
-We assume you have a fully functionnal QGIS Server. See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
+We assume you have a fully functional QGIS Server with Xvfb. See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
 
 We need to download the plugin, and tell QGIS Server where the plugins are stored, then reload the web server.
 For example on Debian:
 
-```
+```bash
 # Create needed directory to store plugins
 mkdir -p /srv/qgis/plugins
 
@@ -33,4 +30,15 @@ FcgidInitialEnv QGIS_PLUGINPATH "/srv/qgis/plugins/"
 service apache2 reload
 ```
 
-You can now test your installation
+You can now test your installation.
+
+### API
+
+This plugin adds some new requests to the WMS service:
+* `REQUEST=GETCAPABILITIESATLAS`
+* `REQUEST=GETPRINTATLAS`
+  * `TEMPLATE`: **required**
+  * `FORMAT`: **required**
+  * `DPI`: **required**
+  * `MAP`: **required**
+  * `EXP_FILTER`: **required**, it must be HTML escaped. For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
