@@ -143,8 +143,9 @@ class AtlasPrintFilter(QgsServerFilter):
                 predefined_scales=self.predefined_scales,
                 feature_filter=self.feature_filter
             )
-        except Exception:
+        except Exception as e:
             pdf = None
+            QgsMessageLog.logMessage('ATLAS - PDF CREATION ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
 
         if not pdf:
             body = {
@@ -166,7 +167,8 @@ class AtlasPrintFilter(QgsServerFilter):
                 loads = f.readlines()
                 ba = QByteArray(b''.join(loads))
                 self.handler.appendBody(ba)
-        except Exception:
+        except Exception as e:
+            QgsMessageLog.logMessage('ATLAS - PDF READING ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
             body = {
                 'status': 'fail',
                 'message': 'Error occured while reading PDF file',
@@ -180,7 +182,7 @@ class AtlasPrintFilter(QgsServerFilter):
     @staticmethod
     def print_atlas(project_path, composer_name, predefined_scales, feature_filter, page_name_expression=None):
         if not feature_filter:
-            QgsMessageLog.logMessage("atlasprint: NO feature_filter provided !", 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage("atlasprint: No feature_filter provided !", 'atlasprint', Qgis.Critical)
             return None
 
         # Get composer from project
