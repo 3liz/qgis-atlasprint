@@ -53,22 +53,21 @@ class AtlasPrintFilter(QgsServerFilter):
         self.page_name_expression = None
         self.feature_filter = None
 
-        self.getMetadata()
+        self.metadata = {}
+        self.get_plugin_metadata()
 
         # QgsMessageLog.logMessage("atlasprintFilter end init", 'atlasprint', Qgis.Info)
 
-    def getMetadata(self):
+    def get_plugin_metadata(self):
         """
         Get plugin metadata
         """
-        mfile = str(Path(__file__).resolve().parent.parent / 'metadata.txt')
-        if os.path.isfile(mfile):
+        metadata_file = Path(__file__).resolve().parent.parent / 'metadata.txt'
+        if metadata_file.is_file():
             config = ConfigParser()
-            config.read(mfile)
-            self.metadata = {
-                'name': config.get('general', 'name'),
-                'version': config.get('general', 'version')
-            }
+            config.read(metadata_file)
+            self.metadata['name'] = config.get('general', 'name')
+            self.metadata['version'] = config.get('general', 'version')
 
     def setJsonResponse(self, status, body):
         """

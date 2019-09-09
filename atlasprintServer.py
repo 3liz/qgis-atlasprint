@@ -40,6 +40,7 @@ class AtlasPrintServer:
             serverIface.registerFilter(AtlasPrintFilter(serverIface), 50)
         except Exception as e:
             QgsMessageLog.logMessage("atlasprint - Error loading filter atlasprint : %s" % e, 'atlasprint', Qgis.Critical)
+            raise
 
     def create_filter(self):
         """Create a new filter instance - Used for tests
