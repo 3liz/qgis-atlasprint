@@ -1,11 +1,3 @@
-# This file contains metadata for your plugin. Since
-# version 2.0 of QGIS this is the proper way to supply
-# information about a plugin. The old method of
-# embedding metadata in __init__.py will
-# is no longer supported since version 2.0.
-
-# This file should be included when you package your plugin.# Mandatory items:
-
 [general]
 name=atlasprint
 qgisMinimumVersion=3.0
@@ -13,16 +5,12 @@ description=Add atlas capability for getPrint request
 version=1.2.2
 author=3Liz
 email=mdouchin@3liz.com
-; if True it's a server plugin
 server=True
 
 about=Add atlas capability for getPrint request
 
 tracker=https://github.com/3liz/qgis-atlasprint/issues
 repository=https://github.com/3liz/qgis-atlasprint
-# End of mandatory metadata
-
-# Recommended items:
 
 # Uncomment the following line and add your changelog:
 # changelog=
@@ -33,9 +21,5 @@ tags=server, print, atlas
 homepage=https://github.com/3liz/qgis-atlasprint
 category=Plugins
 icon=icon.png
-# experimental flag
-experimental=True
-
-# deprecated flag (applies to the whole plugin, not just a single version)
+experimental=False
 deprecated=False
-
