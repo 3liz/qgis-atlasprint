@@ -2,7 +2,7 @@
 name=atlasprint
 qgisMinimumVersion=3.0
 description=Add atlas capability for getPrint request
-version=1.2.2
+version=1.2.3
 author=3Liz
 email=mdouchin@3liz.com
 server=True
