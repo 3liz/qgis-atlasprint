@@ -65,7 +65,7 @@ class AtlasPrintFilter(QgsServerFilter):
         metadata_file = Path(__file__).resolve().parent.parent / 'metadata.txt'
         if metadata_file.is_file():
             config = ConfigParser()
-            config.read(metadata_file)
+            config.read(str(metadata_file))
             self.metadata['name'] = config.get('general', 'name')
             self.metadata['version'] = config.get('general', 'version')
 
