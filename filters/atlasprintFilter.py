@@ -36,11 +36,11 @@ class AtlasPrintFilter(QgsServerFilter):
 
     metadata = {}
 
-    def __init__(self, serverIface):
-        QgsMessageLog.logMessage("atlasprintFilter.init", 'atlasprint', Qgis.Info)
-        super(AtlasPrintFilter, self).__init__(serverIface)
+    def __init__(self, server_iface):
+        QgsMessageLog.logMessage('atlasprintFilter.init', 'atlasprint', Qgis.Info)
+        super(AtlasPrintFilter, self).__init__(server_iface)
 
-        self.serverIface = serverIface
+        self.server_iface = server_iface
         self.handler = None
         self.project = None
         self.project_path = None
@@ -82,7 +82,7 @@ class AtlasPrintFilter(QgsServerFilter):
         """
         Send new response
         """
-        self.handler = self.serverIface.requestHandler()
+        self.handler = self.server_iface.requestHandler()
         params = self.handler.parameterMap()
 
         # Check if needed params are passed
@@ -128,7 +128,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'An error occurred while parsing the given expression: %s' % expression.parserErrorString()
                 }
-            QgsMessageLog.logMessage('ATLAS - ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
             self.setJsonResponse('400', body)
             return
 
@@ -142,14 +142,14 @@ class AtlasPrintFilter(QgsServerFilter):
             )
         except Exception as e:
             pdf = None
-            QgsMessageLog.logMessage('ATLAS - PDF CREATION ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('PDF CREATION ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
 
         if not pdf:
             body = {
                 'status': 'fail',
                 'message': 'ATLAS - Error while generating the PDF'
             }
-            QgsMessageLog.logMessage("ATLAS - No PDF generated in %s" % pdf, 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('No PDF generated in {}'.format(pdf), 'atlasprint', Qgis.Critical)
             self.setJsonResponse('500', body)
             return
 
@@ -165,7 +165,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 ba = QByteArray(b''.join(loads))
                 self.handler.appendBody(ba)
         except Exception as e:
-            QgsMessageLog.logMessage('ATLAS - PDF READING ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('PDF READING ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
             body = {
                 'status': 'fail',
                 'message': 'Error occured while reading PDF file',
@@ -179,7 +179,7 @@ class AtlasPrintFilter(QgsServerFilter):
     @staticmethod
     def print_atlas(project_path, composer_name, predefined_scales, feature_filter, page_name_expression=None):
         if not feature_filter:
-            QgsMessageLog.logMessage("atlasprint: No feature_filter provided !", 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('No feature_filter provided !', 'atlasprint', Qgis.Critical)
             return None
 
         # Get composer from project
@@ -206,7 +206,7 @@ class AtlasPrintFilter(QgsServerFilter):
                     )
 
         if not composer_xml:
-            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !", 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('Composer XML not parsed !', 'atlasprint', Qgis.Critical)
             return None
 
         document = QDomDocument()
@@ -253,37 +253,37 @@ class AtlasPrintFilter(QgsServerFilter):
             ids = list(map(int, re.findall(r'\d+', feature_filter)))
             if len(ids) > 0:
                 use_fid = ids[0]
-        if use_fid:
-            qReq = QgsFeatureRequest().setFilterFid(use_fid)
-        else:
-            qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
+        # if use_fid:
+        #     qReq = QgsFeatureRequest().setFilterFid(use_fid)
+        # else:
+        #     qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
 
         # Change feature_filter in order to improve performance
         pks = coverage_layer.dataProvider().pkAttributeIndexes()
         if use_fid and len(pks) == 1:
             pk = coverage_layer.dataProvider().fields()[pks[0]].name()
             feature_filter = '"%s" IN (%s)' % (pk, use_fid)
-            QgsMessageLog.logMessage("atlasprint: feature_filter changed into: %s" % feature_filter, 'atlasprint', Qgis.Info)
-            qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
+            QgsMessageLog.logMessage('feature_filter changed into: {}'.format(feature_filter), 'atlasprint', Qgis.Info)
+            # qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
 
         # setup settings
         settings = QgsLayoutExporter.PdfExportSettings()
         export_path = os.path.join(
-                tempfile.gettempdir(),
-                '%s_%s.pdf' % (composer_name, uuid4())
-                )
+            tempfile.gettempdir(),
+            '{}_{}.pdf'.format(composer_name, uuid4())
+        )
         exporter = QgsLayoutExporter(layout)
         result = exporter.exportToPdf(atlas, export_path, settings)
 
         if result[0] != QgsLayoutExporter.Success:
-            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('export not generated {}'.format(export_path), 'atlasprint', Qgis.Critical)
             return None
 
         if not os.path.isfile(export_path):
-            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('export not generated {}'.format(export_path), 'atlasprint', Qgis.Critical)
             return None
 
-        QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path, 'atlasprint', Qgis.Success)
+        QgsMessageLog.logMessage('successful export in generated {}'.format(export_path), 'atlasprint', Qgis.Success)
         return export_path

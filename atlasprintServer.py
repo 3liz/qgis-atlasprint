@@ -31,20 +31,19 @@ class AtlasPrintServer:
     this plugin loads atlasprint filter"""
 
     def __init__(self, serverIface: 'QgsServerInterface') -> None:
-        # Save reference to the QGIS server interface
-        self.serverIface = serverIface
-        QgsMessageLog.logMessage("SUCCESS - atlasprint init", 'atlasprint', Qgis.Info)
+        self.server_iface = serverIface
+        QgsMessageLog.logMessage('SUCCESS - init', 'atlasprint', Qgis.Info)
 
         from .filters.atlasprintFilter import AtlasPrintFilter
         try:
-            serverIface.registerFilter(AtlasPrintFilter(serverIface), 50)
+            serverIface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
         except Exception as e:
-            QgsMessageLog.logMessage("atlasprint - Error loading filter atlasprint : %s" % e, 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage('Error loading filter atlasprint : {}'.format(e), 'atlasprint', Qgis.Critical)
             raise
 
     def create_filter(self):
         """Create a new filter instance - Used for tests
         """
         from .filters.atlasprintFilter import AtlasPrintFilter
-        return AtlasPrintFilter(self.serverIface)
+        return AtlasPrintFilter(self.server_iface)
 
