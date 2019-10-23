@@ -270,23 +270,17 @@ class AtlasPrintFilter(QgsServerFilter):
             qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
-        uid = uuid4()
-        i = 0  # We use a single page for now.
-
-        atlas.beginRender()
-        atlas.seekTo(i)
 
         # setup settings
         settings = QgsLayoutExporter.PdfExportSettings()
         export_path = os.path.join(
                 tempfile.gettempdir(),
-                '%s_%s.pdf' % (atlas.nameForPage(i), uid)
-        )
+                '%s_%s.pdf' % (composer_name, uuid4())
+                )
         exporter = QgsLayoutExporter(layout)
-        result = exporter.exportToPdf(export_path, settings)
+        result = exporter.exportToPdf(atlas, export_path, settings)
 
-        atlas.endRender()
-        if result != QgsLayoutExporter.Success:
+        if result[0] != QgsLayoutExporter.Success:
             QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
             return None
 
