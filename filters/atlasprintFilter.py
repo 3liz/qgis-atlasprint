@@ -123,14 +123,11 @@ class AtlasPrintFilter(QgsServerFilter):
 
         # check expression
         expression = QgsExpression(self.feature_filter)
-        if not expression.hasParserError():
-            feature_request = QgsFeatureRequest(expression)
-            feature_request.setLimit(1)
-        else:
+        if expression.hasParserError():
             body = {
                 'status': 'fail',
                 'message': 'An error occurred while parsing the given expression: %s' % expression.parserErrorString()
-            }
+                }
             QgsMessageLog.logMessage('ATLAS - ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
             self.setJsonResponse('400', body)
             return
