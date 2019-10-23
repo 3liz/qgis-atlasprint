@@ -19,22 +19,20 @@
 import json
 import os
 import tempfile
-from uuid import uuid4
 
+from uuid import uuid4
 from pathlib import Path
 from configparser import ConfigParser
 
 from qgis.server import QgsServerFilter
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
-from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsExpression, QgsFeatureRequest
+from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsExpression
 from qgis.core import QgsPrintLayout, QgsReadWriteContext, QgsLayoutItemMap, QgsLayoutExporter
 from qgis.PyQt.QtCore import QByteArray
 from qgis.PyQt.QtXml import QDomDocument
 
 
 class AtlasPrintFilter(QgsServerFilter):
-
-    metadata = {}
 
     def __init__(self, server_iface):
         QgsMessageLog.logMessage('atlasprintFilter.init', 'atlasprint', Qgis.Info)
@@ -126,7 +124,7 @@ class AtlasPrintFilter(QgsServerFilter):
         if expression.hasParserError():
             body = {
                 'status': 'fail',
-                'message': 'An error occurred while parsing the given expression: %s' % expression.parserErrorString()
+                'message': 'An error occurred while parsing the given expression: {}'.format(expression.parserErrorString())
                 }
             QgsMessageLog.logMessage('ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
             self.setJsonResponse('400', body)
@@ -191,14 +189,14 @@ class AtlasPrintFilter(QgsServerFilter):
         composer_xml = None
         with open(project_path, 'r') as f:
             tree = ET.parse(f)
-            for elem in tree.findall('.//Composer[@title="%s"]' % composer_name):
+            for elem in tree.findall('.//Composer[@title="{}"]'.format(composer_name)):
                 composer_xml = ET.tostring(
                     elem,
                     encoding='utf8',
                     method='xml'
                 )
             if not composer_xml:
-                for elem in tree.findall('.//Layout[@name="%s"]' % composer_name):
+                for elem in tree.findall('.//Layout[@name="{}"]'.format(composer_name)):
                     composer_xml = ET.tostring(
                         elem,
                         encoding='utf8',
@@ -262,7 +260,7 @@ class AtlasPrintFilter(QgsServerFilter):
         pks = coverage_layer.dataProvider().pkAttributeIndexes()
         if use_fid and len(pks) == 1:
             pk = coverage_layer.dataProvider().fields()[pks[0]].name()
-            feature_filter = '"%s" IN (%s)' % (pk, use_fid)
+            feature_filter = '"{}" IN ({})'.format(pk, use_fid)
             QgsMessageLog.logMessage('feature_filter changed into: {}'.format(feature_filter), 'atlasprint', Qgis.Info)
             # qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
@@ -285,5 +283,6 @@ class AtlasPrintFilter(QgsServerFilter):
             QgsMessageLog.logMessage('export not generated {}'.format(export_path), 'atlasprint', Qgis.Critical)
             return None
 
-        QgsMessageLog.logMessage('successful export in generated {}'.format(export_path), 'atlasprint', Qgis.Success)
+        # Do not use Qgis.Success, it becomes a critical
+        QgsMessageLog.logMessage('successful export in generated {}'.format(export_path), 'atlasprint', Qgis.Info)
         return export_path
