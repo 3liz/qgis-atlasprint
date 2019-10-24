@@ -16,6 +16,7 @@
 ***************************************************************************
 """
 
+import re
 import json
 import os
 import tempfile
@@ -23,6 +24,7 @@ import tempfile
 from uuid import uuid4
 from pathlib import Path
 from configparser import ConfigParser
+from xml.etree import ElementTree as ET
 
 from qgis.server import QgsServerFilter
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
@@ -40,16 +42,10 @@ class AtlasPrintFilter(QgsServerFilter):
 
         self.server_iface = server_iface
         self.handler = None
-        self.project = None
-        self.project_path = None
-        self.debug_mode = True
-        self.composer_name = None
         self.predefined_scales = [
             500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000,
             2500000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000
         ]
-        self.page_name_expression = None
-        self.feature_filter = None
 
         self.metadata = {}
         self.get_plugin_metadata()
@@ -58,7 +54,7 @@ class AtlasPrintFilter(QgsServerFilter):
 
     def get_plugin_metadata(self):
         """
-        Get plugin metadata
+        Get plugin metadata.
         """
         metadata_file = Path(__file__).resolve().parent.parent / 'metadata.txt'
         if metadata_file.is_file():
@@ -67,18 +63,19 @@ class AtlasPrintFilter(QgsServerFilter):
             self.metadata['name'] = config.get('general', 'name')
             self.metadata['version'] = config.get('general', 'version')
 
-    def setJsonResponse(self, status, body):
+    def set_json_response(self, status, body):
         """
-        Set response with given parameters
+        Set response with given parameters.
         """
         self.handler.clear()
         self.handler.setResponseHeader('Content-type', 'text/json')
         self.handler.setResponseHeader('Status', status)
         self.handler.appendBody(json.dumps(body).encode('utf-8'))
 
+    # noinspection PyPep8Naming
     def responseComplete(self):
         """
-        Send new response
+        Send new response.
         """
         self.handler = self.server_iface.requestHandler()
         params = self.handler.parameterMap()
@@ -102,7 +99,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'success',
                 'metadata': self.metadata
             }
-            self.setJsonResponse('200', body)
+            self.set_json_response('200', body)
             return
 
         # Check if needed params are set
@@ -112,31 +109,29 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'Missing parameters: {} are required.'.format(' '.join(required))
             }
-            self.setJsonResponse('400', body)
+            self.set_json_response('400', body)
             return
 
-        self.project_path = self.serverInterface().configFilePath()
-        self.composer_name = params['TEMPLATE']
-        self.feature_filter = params['EXP_FILTER']
+        feature_filter = params['EXP_FILTER']
 
         # check expression
-        expression = QgsExpression(self.feature_filter)
+        expression = QgsExpression(feature_filter)
         if expression.hasParserError():
             body = {
                 'status': 'fail',
                 'message': 'An error occurred while parsing the given expression: {}'.format(expression.parserErrorString())
                 }
             QgsMessageLog.logMessage('ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
-            self.setJsonResponse('400', body)
+            self.set_json_response('400', body)
             return
 
         # noinspection PyBroadException
         try:
             pdf = self.print_atlas(
-                project_path=self.project_path,
-                composer_name=self.composer_name,
+                project_path=self.serverInterface().configFilePath(),
+                layout_name=params['TEMPLATE'],
                 predefined_scales=self.predefined_scales,
-                feature_filter=self.feature_filter
+                feature_filter=feature_filter
             )
         except Exception as e:
             pdf = None
@@ -148,7 +143,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'message': 'ATLAS - Error while generating the PDF'
             }
             QgsMessageLog.logMessage('No PDF generated in {}'.format(pdf), 'atlasprint', Qgis.Critical)
-            self.setJsonResponse('500', body)
+            self.set_json_response('500', body)
             return
 
         # Send PDF
@@ -166,37 +161,51 @@ class AtlasPrintFilter(QgsServerFilter):
             QgsMessageLog.logMessage('PDF READING ERROR: {}'.format(e), 'atlasprint', Qgis.Critical)
             body = {
                 'status': 'fail',
-                'message': 'Error occured while reading PDF file',
+                'message': 'Error occurred while reading PDF file',
             }
-            self.setJsonResponse('500', body)
+            self.set_json_response('500', body)
         finally:
             os.remove(pdf)
 
         return
 
     @staticmethod
-    def print_atlas(project_path, composer_name, predefined_scales, feature_filter, page_name_expression=None):
-        if not feature_filter:
-            QgsMessageLog.logMessage('No feature_filter provided !', 'atlasprint', Qgis.Critical)
-            return None
+    def print_atlas(project_path, layout_name, predefined_scales, feature_filter):
+        """Generate an atlas.
 
+        :param project_path: Path to project to render as atlas.
+        :type project_path: basestring
+
+        :param layout_name: Name of the layout
+        :type layout_name: basestring
+
+        :param predefined_scales: List of scales which are available to render the feature.
+        :type predefined_scales: list
+
+        :param feature_filter: QGIS Expression to use to select the feature.
+        It can return many features, a multiple pages PDF will be returned.
+        :type feature_filter: basestring
+
+        :return: Path to the PDF.
+        :rtype: basestring
+        """
         # Get composer from project
         # in QGIS 2, we can't get composers without iface
         # so we reading project xml and extract composer
         # TODO Since QGIS 3.0, we should be able to use project layoutManager()
         # noinspection PyPep8Naming
-        from xml.etree import ElementTree as ET
+
         composer_xml = None
         with open(project_path, 'r') as f:
             tree = ET.parse(f)
-            for elem in tree.findall('.//Composer[@title="{}"]'.format(composer_name)):
+            for elem in tree.findall('.//Composer[@title="{}"]'.format(layout_name)):
                 composer_xml = ET.tostring(
                     elem,
                     encoding='utf8',
                     method='xml'
                 )
             if not composer_xml:
-                for elem in tree.findall('.//Layout[@name="{}"]'.format(composer_name)):
+                for elem in tree.findall('.//Layout[@name="{}"]'.format(layout_name)):
                     composer_xml = ET.tostring(
                         elem,
                         encoding='utf8',
@@ -204,8 +213,8 @@ class AtlasPrintFilter(QgsServerFilter):
                     )
 
         if not composer_xml:
-            QgsMessageLog.logMessage('Composer XML not parsed !', 'atlasprint', Qgis.Critical)
-            return None
+            QgsMessageLog.logMessage('Layout XML not parsed !', 'atlasprint', Qgis.Critical)
+            return
 
         document = QDomDocument()
         document.setContent(composer_xml)
@@ -237,17 +246,15 @@ class AtlasPrintFilter(QgsServerFilter):
 
         layout.reportContext().setPredefinedScales(predefined_scales)
 
-        if page_name_expression:
-            atlas.setPageNameExpression(page_name_expression)
+        # Filter feature here to avoid QGIS looping through every feature when doing
+        # composition.setAtlasMode(QgsComposition.ExportAtlas)
 
-        # Filter feature here to avoid QGIS looping through every feature when doing : composition.setAtlasMode(QgsComposition.ExportAtlas)
         coverage_layer = atlas.coverageLayer()
 
         # Filter by FID as QGIS cannot compile expressions with $id or other $ vars
         # which leads to bad performance for big dataset
         use_fid = None
         if '$id' in feature_filter:
-            import re
             ids = list(map(int, re.findall(r'\d+', feature_filter)))
             if len(ids) > 0:
                 use_fid = ids[0]
@@ -270,18 +277,18 @@ class AtlasPrintFilter(QgsServerFilter):
         settings = QgsLayoutExporter.PdfExportSettings()
         export_path = os.path.join(
             tempfile.gettempdir(),
-            '{}_{}.pdf'.format(composer_name, uuid4())
+            '{}_{}.pdf'.format(layout_name, uuid4())
         )
         exporter = QgsLayoutExporter(layout)
         result = exporter.exportToPdf(atlas, export_path, settings)
 
         if result[0] != QgsLayoutExporter.Success:
             QgsMessageLog.logMessage('export not generated {}'.format(export_path), 'atlasprint', Qgis.Critical)
-            return None
+            return
 
         if not os.path.isfile(export_path):
             QgsMessageLog.logMessage('export not generated {}'.format(export_path), 'atlasprint', Qgis.Critical)
-            return None
+            return
 
         # Do not use Qgis.Success, it becomes a critical
         QgsMessageLog.logMessage('successful export in generated {}'.format(export_path), 'atlasprint', Qgis.Info)
