@@ -34,9 +34,17 @@ You can now test your installation.
 
 ### API
 
+The layout must have an atlas enabled.
+
 This plugin adds some new requests to the WMS service:
 * `REQUEST=GETCAPABILITIESATLAS`: Return the plugin version
 * `REQUEST=GETPRINTATLAS`
   * `TEMPLATE`: **required**, name of the layout to use.
-  * `EXP_FILTER`: **required**, it must be HTML escaped. For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
-  * `MAP`: QGIS Server can have the project information from different sources.
+  * `EXP_FILTER`: **required**, it must be HTML escaped.
+    * For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
+    * An expression returning many features can also be used, for instance `&EXP_FILTER=id in ('1','2')` will return a PDF with 2 pages.
+  * `SCALE`: *optional*. If not provided, the default configuration in the atlas is used.
+    * If set to an integer number, the scale will be fixed.
+
+The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.
+``
