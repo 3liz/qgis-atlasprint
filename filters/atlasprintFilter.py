@@ -43,7 +43,6 @@ class AtlasPrintFilter(QgsServerFilter):
         self.serverIface = serverIface
         self.handler = None
         self.project = None
-        self.project_path = None
         self.debug_mode = True
         self.composer_name = None
         self.predefined_scales = [
@@ -117,7 +116,6 @@ class AtlasPrintFilter(QgsServerFilter):
             self.setJsonResponse('400', body)
             return
 
-        self.project_path = self.serverInterface().configFilePath()
         self.composer_name = params['TEMPLATE']
         self.feature_filter = params['EXP_FILTER']
 
@@ -134,8 +132,7 @@ class AtlasPrintFilter(QgsServerFilter):
 
         # noinspection PyBroadException
         try:
-            pdf = self.print_atlas(
-                project_path=self.project_path,
+            pdf = self.print(
                 composer_name=self.composer_name,
                 predefined_scales=self.predefined_scales,
                 feature_filter=self.feature_filter
@@ -176,77 +173,42 @@ class AtlasPrintFilter(QgsServerFilter):
 
         return
 
+    def print(self, composer_name, predefined_scales,
+              feature_filter, page_name_expression=None):
+
+        project_instance = QgsProject.instance()
+        layout_manager = project_instance.layoutManager()
+        composer = layout_manager.layoutByName(composer_name)
+
+        if isinstance(composer, QgsPrintLayout):
+            composer = self.prepare_atlas(
+                composer, predefined_scales, feature_filter, page_name_expression)
+
+        return self.export_pdf(composer_name, composer)
+
     @staticmethod
-    def print_atlas(project_path, composer_name, predefined_scales, feature_filter, page_name_expression=None):
+    def prepare_atlas(composer, predefined_scales, feature_filter,
+                      page_name_expression=None):
         if not feature_filter:
-            QgsMessageLog.logMessage("atlasprint: No feature_filter provided !", 'atlasprint', Qgis.Critical)
+            QgsMessageLog.logMessage("atlasprint: No feature_filter provided!",
+                                     'atlasprint', Qgis.Critical)
             return None
 
-        # Get composer from project
-        # in QGIS 2, we can't get composers without iface
-        # so we reading project xml and extract composer
-        # TODO Since QGIS 3.0, we should be able to use project layoutManager()
-        # noinspection PyPep8Naming
-        from xml.etree import ElementTree as ET
-        composer_xml = None
-        with open(project_path, 'r') as f:
-            tree = ET.parse(f)
-            for elem in tree.findall('.//Composer[@title="%s"]' % composer_name):
-                composer_xml = ET.tostring(
-                    elem,
-                    encoding='utf8',
-                    method='xml'
-                )
-            if not composer_xml:
-                for elem in tree.findall('.//Layout[@name="%s"]' % composer_name):
-                    composer_xml = ET.tostring(
-                        elem,
-                        encoding='utf8',
-                        method='xml'
-                    )
-
-        if not composer_xml:
-            QgsMessageLog.logMessage("atlasprint: Composer XML not parsed !", 'atlasprint', Qgis.Critical)
-            return None
-
-        document = QDomDocument()
-        document.setContent(composer_xml)
-
-        # Get canvas, map setting & instantiate composition
-        canvas = QgsMapCanvas()
-        project = QgsProject()
-        project.read(project_path)
-        bridge = QgsLayerTreeMapCanvasBridge(
-            project.layerTreeRoot(),
-            canvas
-        )
-        bridge.setCanvasLayers()
-
-        layout = QgsPrintLayout(project)
-
-        # Load content from XML
-        layout.loadFromTemplate(
-            document,
-            QgsReadWriteContext(),
-        )
-
-        atlas = layout.atlas()
+        atlas = composer.atlas()
         atlas.setEnabled(True)
-
-        atlas_map = layout.referenceMap()
+        atlas_map = composer.referenceMap()
         atlas_map.setAtlasDriven(True)
         atlas_map.setAtlasScalingMode(QgsLayoutItemMap.Predefined)
-
-        layout.reportContext().setPredefinedScales(predefined_scales)
-
+        composer.reportContext().setPredefinedScales(predefined_scales)
         if page_name_expression:
             atlas.setPageNameExpression(page_name_expression)
 
-        # Filter feature here to avoid QGIS looping through every feature when doing : composition.setAtlasMode(QgsComposition.ExportAtlas)
+        # Filter feature here to avoid QGIS looping through every feature when
+        # doing : composition.setAtlasMode(QgsComposition.ExportAtlas)
         coverage_layer = atlas.coverageLayer()
 
-        # Filter by FID as QGIS cannot compile expressions with $id or other $ vars
-        # which leads to bad performance for big dataset
+        # Filter by FID as QGIS cannot compile expressions with $id or other
+        # $ vars which leads to bad performance for big dataset
         use_fid = None
         if '$id' in feature_filter:
             import re
@@ -267,22 +229,26 @@ class AtlasPrintFilter(QgsServerFilter):
             qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
+        return atlas
 
+    @staticmethod
+    def export_pdf(composer_name, composer):
         # setup settings
         settings = QgsLayoutExporter.PdfExportSettings()
         export_path = os.path.join(
                 tempfile.gettempdir(),
                 '%s_%s.pdf' % (composer_name, uuid4())
-                )
-        exporter = QgsLayoutExporter(layout)
-        result = exporter.exportToPdf(atlas, export_path, settings)
+              )
+        result, error = QgsLayoutExporter.exportToPdf(
+            composer,
+            export_path,
+            settings)
 
-        if result[0] != QgsLayoutExporter.Success:
-            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
-            return None
-
-        if not os.path.isfile(export_path):
-            QgsMessageLog.logMessage("atlasprint: export not generated %s" % export_path, 'atlasprint', Qgis.Critical)
+        if (result != QgsLayoutExporter.Success
+                or not os.path.isfile(export_path)):
+            QgsMessageLog.logMessage("atlasprint: export not generated {} "
+                                     "Error: {}".format(export_path, error),
+                                     'atlasprint', Qgis.Critical)
             return None
 
         QgsMessageLog.logMessage("atlasprint: path generated %s" % export_path, 'atlasprint', Qgis.Success)
