@@ -16,24 +16,17 @@
 ***************************************************************************
 """
 
-import re
 import json
 import os
-import tempfile
 
-from uuid import uuid4
 from pathlib import Path
 from configparser import ConfigParser
 
 from qgis.server import QgsServerFilter
-from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
-from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsExpression, QgsMasterLayoutInterface
-from qgis.core import QgsLayoutItemMap, QgsLayoutExporter
+from qgis.core import Qgis, QgsMessageLog, QgsExpression
 from qgis.PyQt.QtCore import QByteArray
 
-
-class AtlasPrintException(Exception):
-    pass
+from .core import print_atlas, AtlasPrintException
 
 
 class AtlasPrintFilter(QgsServerFilter):
@@ -110,7 +103,6 @@ class AtlasPrintFilter(QgsServerFilter):
             return
 
         feature_filter = params['EXP_FILTER']
-
         scale = params.get('SCALE', None)
 
         # check expression
@@ -126,7 +118,7 @@ class AtlasPrintFilter(QgsServerFilter):
 
         # noinspection PyBroadException
         try:
-            pdf_path = self.print_atlas(
+            pdf_path = print_atlas(
                 project_path=self.serverInterface().configFilePath(),
                 layout_name=params['TEMPLATE'],
                 scale=scale,
@@ -154,7 +146,6 @@ class AtlasPrintFilter(QgsServerFilter):
         self.handler.setResponseHeader('Content-type', 'application/pdf')
         self.handler.setResponseHeader('Status', '200')
 
-        # noinspection PyBroadException
         try:
             with open(pdf_path, 'rb') as f:
                 loads = f.readlines()
@@ -169,94 +160,3 @@ class AtlasPrintFilter(QgsServerFilter):
             self.set_json_response('500', body)
         finally:
             os.remove(pdf_path)
-
-    @staticmethod
-    def print_atlas(project_path, layout_name, feature_filter, scale=None):
-        """Generate an atlas.
-
-        :param project_path: Path to project to render as atlas.
-        :type project_path: basestring
-
-        :param layout_name: Name of the layout
-        :type layout_name: basestring
-
-        :param feature_filter: QGIS Expression to use to select the feature.
-        It can return many features, a multiple pages PDF will be returned.
-        :type feature_filter: basestring
-
-        :param scale: A scale to force in the atlas context. Default to None.
-        :type scale: int
-
-        :return: Path to the PDF.
-        :rtype: basestring
-        """
-        project = QgsProject()
-        project.read(project_path)
-        canvas = QgsMapCanvas()
-        bridge = QgsLayerTreeMapCanvasBridge(
-            project.layerTreeRoot(),
-            canvas
-        )
-        bridge.setCanvasLayers()
-        manager = project.layoutManager()
-        master_layout = manager.layoutByName(layout_name)
-
-        if not master_layout:
-            raise AtlasPrintException('Layout not found')
-
-        if master_layout.layoutType() != QgsMasterLayoutInterface.PrintLayout:
-            raise AtlasPrintException('The layout is not a print layout')
-
-        for l in manager.printLayouts():
-            if l.name() == layout_name:
-                layout = l
-                break
-        else:
-            raise AtlasPrintException('The layout is not found')
-
-        atlas = layout.atlas()
-
-        if not atlas.enabled():
-            raise AtlasPrintException('The layout is not enabled for an atlas')
-
-        if scale:
-            layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
-            layout.referenceMap().setScale(int(scale))
-
-        # if layout.atlasScalingMode() == QgsLayoutItemMap.Predefined:
-        #    QgsMessageLog.logMessage('Using predefined scale in project.', 'atlasprint', Qgis.Info)
-
-        # Filter by FID as QGIS cannot compile expressions with $id or other $ vars
-        # which leads to bad performance for big dataset
-        use_fid = None
-        if '$id' in feature_filter:
-            ids = list(map(int, re.findall(r'\d+', feature_filter)))
-            if len(ids) > 0:
-                use_fid = ids[0]
-        # if use_fid:
-        #     qReq = QgsFeatureRequest().setFilterFid(use_fid)
-        # else:
-        #     qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
-
-        # Change feature_filter in order to improve performance
-        coverage_layer = atlas.coverageLayer()
-        pks = coverage_layer.dataProvider().pkAttributeIndexes()
-        if use_fid and len(pks) == 1:
-            pk = coverage_layer.dataProvider().fields()[pks[0]].name()
-            feature_filter = '"{}" IN ({})'.format(pk, use_fid)
-            QgsMessageLog.logMessage('feature_filter changed into: {}'.format(feature_filter), 'atlasprint', Qgis.Info)
-            # qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
-
-        atlas.setFilterExpression(feature_filter)
-        settings = QgsLayoutExporter.PdfExportSettings()
-        export_path = os.path.join(
-            tempfile.gettempdir(),
-            '{}_{}.pdf'.format(layout_name, uuid4())
-        )
-        exporter = QgsLayoutExporter(layout)
-        result = exporter.exportToPdf(atlas, export_path, settings)
-
-        if result[0] != QgsLayoutExporter.Success and not os.path.isfile(export_path):
-            raise AtlasPrintException('export not generated {}'.format(export_path))
-
-        return export_path
