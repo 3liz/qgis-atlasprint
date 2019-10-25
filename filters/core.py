@@ -123,30 +123,6 @@ def print_atlas(project_path, layout_name, feature_filter, scale=None):
         layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
         layout.referenceMap().setScale(int(scale))
 
-    #
-    #    QgsMessageLog.logMessage('Using predefined scale in project.', 'atlasprint', Qgis.Info)
-
-    # Filter by FID as QGIS cannot compile expressions with $id or other $ vars
-    # which leads to bad performance for big dataset
-    use_fid = None
-    if '$id' in feature_filter:
-        ids = list(map(int, re.findall(r'\d+', feature_filter)))
-        if len(ids) > 0:
-            use_fid = ids[0]
-    # if use_fid:
-    #     qReq = QgsFeatureRequest().setFilterFid(use_fid)
-    # else:
-    #     qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
-
-    # Change feature_filter in order to improve performance
-    coverage_layer = atlas.coverageLayer()
-    pks = coverage_layer.dataProvider().pkAttributeIndexes()
-    if use_fid and len(pks) == 1:
-        pk = coverage_layer.dataProvider().fields()[pks[0]].name()
-        feature_filter = '"{}" IN ({})'.format(pk, use_fid)
-        QgsMessageLog.logMessage('feature_filter changed into: {}'.format(feature_filter), 'atlasprint', Qgis.Info)
-        # qReq = QgsFeatureRequest().setFilterExpression(feature_filter)
-
     atlas.setFilterExpression(feature_filter)
     settings = QgsLayoutExporter.PdfExportSettings()
 
