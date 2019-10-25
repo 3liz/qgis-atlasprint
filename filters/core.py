@@ -71,7 +71,7 @@ def project_scales(project):
     return scales
 
 
-def print_atlas(project_path, layout_name, feature_filter, scale=None):
+def print_atlas(project_path, layout_name, feature_filter, scales=None, scale=None):
     """Generate an atlas.
 
     :param project_path: Path to project to render as atlas.
@@ -86,6 +86,10 @@ def print_atlas(project_path, layout_name, feature_filter, scale=None):
 
     :param scale: A scale to force in the atlas context. Default to None.
     :type scale: int
+
+    :param scales: A list of predefined list of scales to force in the atlas context.
+    Default to None.
+    :type scales: list
 
     :return: Path to the PDF.
     :rtype: basestring
@@ -119,14 +123,22 @@ def print_atlas(project_path, layout_name, feature_filter, scale=None):
     if not atlas.enabled():
         raise AtlasPrintException('The layout is not enabled for an atlas')
 
+    settings = QgsLayoutExporter.PdfExportSettings()
+
     if scale:
         layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
         layout.referenceMap().setScale(int(scale))
 
-    atlas.setFilterExpression(feature_filter)
-    settings = QgsLayoutExporter.PdfExportSettings()
+    if scales:
+        layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
+        if Qgis.QGIS_VERSION_INT >= 30900:
+            settings.predefinedMapScales = scales
+        else:
+            layout.reportContext().setPredefinedScales(scales)
 
-    if layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
+    atlas.setFilterExpression(feature_filter)
+
+    if not scales and layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
         if Qgis.QGIS_VERSION_INT >= 30900:
             use_project = project.useProjectScales()
             map_scales = project.mapScales()
