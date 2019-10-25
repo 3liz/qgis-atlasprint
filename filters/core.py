@@ -127,7 +127,7 @@ def print_atlas(project_path, layout_name, feature_filter, scales=None, scale=No
 
     if scale:
         layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
-        layout.referenceMap().setScale(int(scale))
+        layout.referenceMap().setScale(scale)
 
     if scales:
         layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)

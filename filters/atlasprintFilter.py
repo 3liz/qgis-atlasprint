@@ -111,8 +111,17 @@ class AtlasPrintFilter(QgsServerFilter):
             if scale and scales:
                 raise AtlasPrintException('SCALE and SCALES can not be used together.')
 
+            if scale:
+                try:
+                    scale = int(scale)
+                except ValueError:
+                    raise AtlasPrintException('Invalid number in SCALE.')
+
             if scales:
-                scales = [int(scale) for scale in scales.split(',')]
+                try:
+                    scales = [int(scale) for scale in scales.split(',')]
+                except ValueError:
+                    raise AtlasPrintException('Invalid number in SCALES.')
 
             pdf_path = print_atlas(
                 project_path=self.serverInterface().configFilePath(),
