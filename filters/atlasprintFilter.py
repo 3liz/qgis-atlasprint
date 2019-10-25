@@ -92,36 +92,33 @@ class AtlasPrintFilter(QgsServerFilter):
             self.set_json_response('200', body)
             return
 
-        # Check if needed params are set
-        required = ['TEMPLATE', 'EXP_FILTER']
-        if not all(elem in params for elem in required):
-            body = {
-                'status': 'fail',
-                'message': 'Missing parameters: {} are required.'.format(' '.join(required))
-            }
-            self.set_json_response('400', body)
-            return
+        template = params.get('TEMPLATE')
+        feature_filter = params.get('EXP_FILTER')
+        scale = params.get('SCALE')
+        scales = params.get('SCALES')
 
-        feature_filter = params['EXP_FILTER']
-        scale = params.get('SCALE', None)
-
-        # check expression
-        expression = QgsExpression(feature_filter)
-        if expression.hasParserError():
-            body = {
-                'status': 'fail',
-                'message': 'An error occurred while parsing the given expression: {}'.format(expression.parserErrorString())
-                }
-            QgsMessageLog.logMessage('ERROR EXPRESSION: {}'.format(expression.parserErrorString()), 'atlasprint', Qgis.Critical)
-            self.set_json_response('400', body)
-            return
-
-        # noinspection PyBroadException
         try:
+            if not template:
+                raise AtlasPrintException('TEMPLATE is required')
+
+            if not feature_filter:
+                raise AtlasPrintException('EXP_FILTER is required')
+
+            expression = QgsExpression(feature_filter)
+            if expression.hasParserError():
+                raise AtlasPrintException('Expression is invalid: {}'.format(expression.parserErrorString()))
+
+            if scale and scales:
+                raise AtlasPrintException('SCALE and SCALES can not be used together.')
+
+            if scales:
+                scales = [int(scale) for scale in scales.split(',')]
+
             pdf_path = print_atlas(
                 project_path=self.serverInterface().configFilePath(),
                 layout_name=params['TEMPLATE'],
                 scale=scale,
+                scales=scales,
                 feature_filter=feature_filter
             )
         except AtlasPrintException as e:

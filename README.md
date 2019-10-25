@@ -44,7 +44,10 @@ This plugin adds some new requests to the WMS service:
     * For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
     * An expression returning many features can also be used, for instance `&EXP_FILTER=id in ('1','2')` will return a PDF with 2 pages.
   * `SCALE`: *optional*. If not provided, the default configuration in the atlas is used.
-    * If set to an integer number, the scale will be fixed.
+    * If set to an integer number, the scale will be fixed. Exclusive with `SCALES`.
+  * `SCALES`: *optional*. If not provided, the default configuration in the atlas is used.
+    * Comma separated list of values. If set, these predefined scales are used. Exclusive with `SCALE`.
+    * For instance `SCALES=400,1000`.
 
 The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.
 ``
