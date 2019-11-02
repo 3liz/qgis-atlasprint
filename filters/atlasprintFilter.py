@@ -94,7 +94,8 @@ class AtlasPrintFilter(QgsServerFilter):
             return
 
         # Check if getprintatlas request. If not, just send the response
-        if 'REQUEST' not in params or params['REQUEST'].lower() not in ['getprintatlas', 'getcapabilitiesatlas']:
+        if 'REQUEST' not in params or params['REQUEST'].lower() not in [
+            'getreport', 'getprintatlas', 'getcapabilitiesatlas']:
             return
 
         # Get capabilities
@@ -108,6 +109,13 @@ class AtlasPrintFilter(QgsServerFilter):
 
         # Check if needed params are set
         required = ['TEMPLATE', 'EXP_FILTER']
+
+        # For QGIS a report is the same as an atlas. so we use the same calls
+        if params['REQUEST'].lower() == 'getreport':
+            params['REQUEST'] = 'GetPrintAtlas'
+            # a report has no filters so we can ignore the EXP_FILTER
+            params['EXP_FILTER'] = '""'
+
         if not all(elem in params for elem in required):
             body = {
                 'status': 'fail',
