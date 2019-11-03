@@ -112,6 +112,7 @@ class AtlasPrintFilter(QgsServerFilter):
 
         # For QGIS a report is the same as an atlas. so we use the same calls
         if params['REQUEST'].lower() == 'getreport':
+            required = ['TEMPLATE']
             params['REQUEST'] = 'GetPrintAtlas'
             # a report has no filters so we can ignore the EXP_FILTER
             params['EXP_FILTER'] = '""'
@@ -119,7 +120,8 @@ class AtlasPrintFilter(QgsServerFilter):
         if not all(elem in params for elem in required):
             body = {
                 'status': 'fail',
-                'message': 'Missing parameters: {} are required.'.format(' '.join(required))
+                'message': 'Missing parameters: {} required.'.format(
+                    ', '.join(required))
             }
             self.setJsonResponse('400', body)
             return
