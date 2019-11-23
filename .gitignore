@@ -43,3 +43,10 @@ nosetests.xml
 *.DS_Store
 .idea
 
+build2
+build3
+
+.cache
+.local
+__output__
+

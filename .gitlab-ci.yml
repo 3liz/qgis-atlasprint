@@ -13,6 +13,7 @@ variables:
 build_3:
   stage: build
   script:
+    - make -C .lizcloud/tests test
     - make -C .lizcloud -f factory.mk package
   environment:
     name: snap

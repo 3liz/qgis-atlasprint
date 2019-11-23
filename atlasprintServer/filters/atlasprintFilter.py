@@ -59,7 +59,7 @@ class AtlasPrintFilter(QgsServerFilter):
         """
         self.handler.clear()
         self.handler.setResponseHeader('Content-type', 'text/json')
-        self.handler.setResponseHeader('Status', status)
+        self.handler.setStatusCode(status)
         self.handler.appendBody(json.dumps(body).encode('utf-8'))
 
     # noinspection PyPep8Naming
@@ -89,7 +89,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'success',
                 'metadata': self.metadata
             }
-            self.set_json_response('200', body)
+            self.set_json_response(200, body)
             return
 
         template = params.get('TEMPLATE')
@@ -136,7 +136,7 @@ class AtlasPrintFilter(QgsServerFilter):
                 'message': 'ATLAS - Error from the user while generating the PDF: {}'.format(e)
             }
             QgsMessageLog.logMessage('User input error :{}'.format(e), 'atlasprint', Qgis.Info)
-            self.set_json_response('400', body)
+            self.set_json_response(400, body)
             return
         except Exception as e:
             body = {
@@ -144,13 +144,13 @@ class AtlasPrintFilter(QgsServerFilter):
                 'message': 'ATLAS - Error while generating the PDF: {}'.format(e)
             }
             QgsMessageLog.logMessage('No PDF generated :{}'.format(e), 'atlasprint', Qgis.Critical)
-            self.set_json_response('500', body)
+            self.set_json_response(500, body)
             return
 
         # Send PDF
         self.handler.clear()
         self.handler.setResponseHeader('Content-type', 'application/pdf')
-        self.handler.setResponseHeader('Status', '200')
+        self.handler.setStatusCode(200)
 
         try:
             with open(pdf_path, 'rb') as f:
@@ -163,6 +163,6 @@ class AtlasPrintFilter(QgsServerFilter):
                 'status': 'fail',
                 'message': 'Error occurred while reading PDF file',
             }
-            self.set_json_response('500', body)
+            self.set_json_response(500, body)
         finally:
             os.remove(pdf_path)

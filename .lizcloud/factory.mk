@@ -2,13 +2,13 @@
 # Makefile for building/packaging qgis for 3Liz
 #
 
-VERSION=$(shell ./metadata_key ../metadata.txt version)
+VERSION=$(shell ./metadata_key ../atlasprintServer/metadata.txt version)
 
 main:
 	echo "Makefile for packaging infra components: select a task"
 
 PACKAGE=qgis_atlasplugin
-FILES = ../filters ../*.py  ../metadata.txt ../README.md
+FILES = ../atlasprintServer/* ../README.md
 PACKAGEDIR=atlasprint
 
 build3/$(PACKAGEDIR):
