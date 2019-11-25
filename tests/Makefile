@@ -18,11 +18,11 @@ QGIS_IMAGE=$(REGISTRY_PREFIX)qgis-platform:$(FLAVOR)
 
 LOCAL_HOME ?= $(shell pwd)
 
-SRCDIR=$(shell realpath ../..)
+SRCDIR=$(shell realpath ..)
 
 test:
 	mkdir -p $$(pwd)/.local $(LOCAL_HOME)/.cache
-	docker run --rm --name qgis-plugin-test-$(COMMITID) -w /src/.lizcloud/tests \
+	docker run --rm --name qgis-plugin-test-$(COMMITID) -w /src/tests \
 		-u $(BECOME_USER) \
 		-v $(SRCDIR):/src \
 		-v $$(pwd)/.local:/.local \

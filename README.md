@@ -6,7 +6,7 @@ This plugin adds a new request to QGIS 3 Server `GetPrintAtlas` which
 allows to export a print layout with an atlas configured, but passing 
 an expression parameter to choose which feature is the current atlas feature.
 
-![Logo of the plugin](icon.png)
+![Logo of the plugin](atlasprintServer/icon.png)
 
 ### API
 
@@ -27,7 +27,7 @@ This plugin adds some new requests to the WMS service:
 
 The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.
 
-### Installation
+### Installation with Qgis server
 
 We assume you have a fully functional QGIS Server with Xvfb. 
 See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
@@ -44,8 +44,17 @@ mkdir -p /srv/qgis/plugins
 cd /srv/qgis/plugins
 wget "https://github.com/3liz/qgis-atlasprint/archive/master.zip"
 unzip master.zip
-mv qgis-atlasprint-master atlasprint
+mv qgis-atlasprint-master/atlasprintServer atlasprint
+```
 
+#### Configure plugin for qgis sersver fcgi module:
+
+If you are using Nginx, Apache or supervisor to run the Qgis fcgi module you will need
+to define the `QGIS_PLUGINPATH` environment variable.
+
+Example with Apache:
+
+```bash
 # Make sure correct environment variables are set in your web server configuration
 # for example in Apache2 with mod_fcgid
 nano /etc/apache2/mods-available/fcgid.conf
@@ -55,4 +64,10 @@ FcgidInitialEnv QGIS_PLUGINPATH "/srv/qgis/plugins/"
 service apache2 reload
 ```
 
-You can now test your installation.
+#### Configure the plugin path in  [py-qgis-server](https://github.com/3liz/py-qgis-server)
+
+You must define the `QGSRV_SERVER_PLUGINPATH` environment variable with Docker or the `pluginpath` setting
+in the `server` section of the configuration file.
+For more informations, see the [py-qgis-server](https://github.com/3liz/py-qgis-server/blob/master/README.md) documentation. 
+
+

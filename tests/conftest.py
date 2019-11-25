@@ -114,7 +114,7 @@ def client(request):
             # Activate debug headers
             os.environ['QGIS_WMTS_CACHE_DEBUG_HEADERS'] = 'true'
 
-            self.datapath = request.config.rootdir.join('tests','data')
+            self.datapath = request.config.rootdir.join('data')
             self.server = QgsServer()
 
 
