@@ -1,4 +1,5 @@
 stages:
+- tests
 - build
 - deploy
 - release
@@ -10,10 +11,23 @@ variables:
   FACTORY_PACKAGE_TYPE: plugin
   FACTORY_MANIFEST: ".lizcloud/factory.manifest"
 
+test:ltr:
+  stage: tests
+  script:
+    - make -C tests FLAVOR=ltr
+  tags:
+    - factory
+
+test:release:
+  stage: tests
+  script:
+    - make -C tests FLAVOR=release
+  tags:
+    - factory
+
 build_3:
   stage: build
   script:
-    - make -C tests
     - make -C .lizcloud -f factory.mk package
   environment:
     name: snap
