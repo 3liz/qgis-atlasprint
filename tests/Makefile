@@ -22,7 +22,7 @@ SRCDIR=$(shell realpath ..)
 
 test:
 	mkdir -p $$(pwd)/.local $(LOCAL_HOME)/.cache
-	docker run --rm --name qgis-plugin-test-$(COMMITID) -w /src/tests \
+	docker run --rm --name qgis-atlasprint-test-$(FLAVOR)-$(COMMITID) -w /src/tests \
 		-u $(BECOME_USER) \
 		-v $(SRCDIR):/src \
 		-v $$(pwd)/.local:/.local \
