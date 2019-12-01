@@ -8,6 +8,7 @@ from uuid import uuid4
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
 from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsMasterLayoutInterface, QgsSettings
 from qgis.core import QgsLayoutItemMap, QgsLayoutExporter
+from qgis.server import QgsConfigCache
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'
@@ -94,8 +95,8 @@ def print_atlas(project_path, layout_name, feature_filter, scales=None, scale=No
     :return: Path to the PDF.
     :rtype: basestring
     """
-    project = QgsProject()
-    project.read(project_path)
+    project = QgsConfigCache.instance().project(project_path)
+    # Probably needs FlushFilter https://github.com/3liz/qgis-logging-plugin/blob/master/flushfilter.py
     canvas = QgsMapCanvas()
     bridge = QgsLayerTreeMapCanvasBridge(
         project.layerTreeRoot(),
