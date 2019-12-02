@@ -71,7 +71,7 @@ def project_scales(project):
     return scales
 
 
-def print_atlas(project_path, layout_name, feature_filter, scales=None, scale=None):
+def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
     """Generate an atlas.
 
     :param project_path: Path to project to render as atlas.
@@ -94,8 +94,6 @@ def print_atlas(project_path, layout_name, feature_filter, scales=None, scale=No
     :return: Path to the PDF.
     :rtype: basestring
     """
-    project = QgsProject()
-    project.read(project_path)
     canvas = QgsMapCanvas()
     bridge = QgsLayerTreeMapCanvasBridge(
         project.layerTreeRoot(),
