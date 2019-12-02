@@ -4,7 +4,7 @@ from qgis.testing import unittest
 
 def test_global_scales(client):
 
-        from atlasprintServer.filters.core import global_scales
+        from atlasprintServer.core import global_scales
 
         """Test we can fetch global scales from INI file or hardcoded scales."""
         scales = global_scales()

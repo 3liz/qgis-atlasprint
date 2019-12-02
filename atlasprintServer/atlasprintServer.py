@@ -22,8 +22,13 @@ __author__ = 'DOUCHIN Michaël'
 __date__ = 'October 2017'
 __copyright__ = '(C) 2017, DOUCHIN Michaël - 3Liz'
 
+import os
+
 from qgis.core import Qgis, QgsMessageLog
 from qgis.server import QgsServerInterface
+
+from .atlasprintService import AtlasPrintService
+from .atlasprintFilter import AtlasPrintFilter
 
 
 class AtlasPrintServer:
@@ -34,16 +39,33 @@ class AtlasPrintServer:
         self.server_iface = serverIface
         QgsMessageLog.logMessage('SUCCESS - init', 'atlasprint', Qgis.Info)
 
-        from .filters.atlasprintFilter import AtlasPrintFilter
+        # debug
+        debug = os.getenv('QGIS_SERVER_PRINTATLAS_DEBUG', '').lower() in ('1','yes','y','true')
+
+        # Register service
+        try:
+            reg = serverIface.serviceRegistry()
+            reg.registerService(AtlasPrintService(debug=debug))
+        except Exception as e:
+            QgsMessageLog.logMessage('Error loading filter atlasprint : {}'.format(e), 'atlasprint', Qgis.Critical)
+            raise
+
+        # Add filter
         try:
             serverIface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
         except Exception as e:
             QgsMessageLog.logMessage('Error loading filter atlasprint : {}'.format(e), 'atlasprint', Qgis.Critical)
             raise
 
-    def create_filter(self):
+    def create_filter(self) -> AtlasPrintFilter:
         """Create a new filter instance - Used for tests
         """
-        from .filters.atlasprintFilter import AtlasPrintFilter
+        from .atlasprintFilter import AtlasPrintFilter
         return AtlasPrintFilter(self.server_iface)
 
+    def createService(self, debug: bool=False) -> AtlasPrintService:
+        """ Create  a new service instance
+
+            Used for testing
+        """
+        return AtlasPrintService(debug=debug)
