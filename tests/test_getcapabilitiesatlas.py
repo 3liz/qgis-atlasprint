@@ -9,6 +9,16 @@ from qgis.server import (QgsBufferServerRequest,
 
 LOGGER = logging.getLogger('server')
 
+def test_atlas_getcapabilities(client):
+    """  Test getcapabilites response
+    """
+    projectfile = "france_parts.qgs"
+
+    # Make a request
+    qs = "?SERVICE=ATLAS&REQUEST=GetCapabilities&MAP=france_parts.qgs"
+    rv = client.get(qs, projectfile)
+    assert rv.status_code == 200
+
 def test_getcapabilitiesatlas(client):
     """  Test getcapabilites response
     """
