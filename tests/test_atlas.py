@@ -13,3 +13,13 @@ def test_global_scales(client):
         ]
         assert scales == expected
 
+def test_not_supported_request(client):
+    """  Test getcapabilites response
+    """
+    projectfile = "france_parts.qgs"
+
+    # Make a request
+    qs = "?SERVICE=ATLAS&REQUEST=Get&MAP=france_parts.qgs"
+    rv = client.get(qs, projectfile)
+    assert rv.status_code == 400
+
