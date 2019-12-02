@@ -1,5 +1,6 @@
 """Test core functions."""
 
+import json
 from qgis.testing import unittest
 
 def test_global_scales(client):
@@ -22,4 +23,9 @@ def test_not_supported_request(client):
     qs = "?SERVICE=ATLAS&REQUEST=Get&MAP=france_parts.qgs"
     rv = client.get(qs, projectfile)
     assert rv.status_code == 400
+
+    assert rv.headers.get('Content-Type','').find('application/json') == 0
+
+    b = json.loads(rv.content.decode('utf-8'))
+    assert b['status'] == 'fail'
 
