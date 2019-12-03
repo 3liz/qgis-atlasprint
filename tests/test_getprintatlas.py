@@ -107,3 +107,16 @@ def test_atlas_getprint_failed(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
 
+
+def test_atlas_getprint(client):
+    """  Test ATLAS getprint response
+    """
+    projectfile = "atlas_simple.qgs"
+
+    # Make a valid request
+    qs = "?SERVICE=ATLAS&REQUEST=GetPrint&MAP=atlas_simple.qgs&TEMPLATE=layout1&EXP_FILTER=id in (1, 2)"
+    rv = client.get(qs, projectfile)
+    assert rv.status_code == 200
+
+    assert rv.headers.get('Content-Type','') == 'application/pdf'
+    assert rv.headers.get('Content-Type','').find('application/pdf') == 0

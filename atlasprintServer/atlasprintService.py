@@ -193,7 +193,7 @@ class AtlasPrintService(QgsService):
             raise AtlasPrintError(404, "ATLAS PDF not found")
 
         # Send PDF
-        response.setHeader('Content-type', 'application/pdf')
+        response.setHeader('Content-Type', 'application/pdf')
         response.setStatusCode(200)
         try:
             response.write(path.read_bytes())
