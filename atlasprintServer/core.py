@@ -1,13 +1,22 @@
 """Core functions, outside of the QGIS Server context for printing atlas."""
 
 import os
-import re
 import tempfile
 
 from uuid import uuid4
+
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
-from qgis.core import Qgis, QgsProject, QgsMessageLog, QgsMasterLayoutInterface, QgsSettings
-from qgis.core import QgsLayoutItemMap, QgsLayoutExporter
+from qgis.core import (
+    Qgis,
+    QgsProject,
+    QgsMessageLog,
+    QgsMasterLayoutInterface,
+    QgsSettings,
+    QgsLayoutItemMap,
+    QgsLayoutExporter,
+)
+from qgis.PyQt.QtCore import QVariant
+
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'
@@ -134,6 +143,9 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
         else:
             layout.reportContext().setPredefinedScales(scales)
 
+    layer = atlas.coverageLayer()
+    feature_filter = optimize_expression(layer, feature_filter)
+
     atlas.setFilterFeatures(True)
     atlas.setFilterExpression(feature_filter)
 
@@ -165,3 +177,27 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
         raise Exception('export not generated {}'.format(export_path))
 
     return export_path
+
+
+def optimize_expression(layer, expression):
+    """Check if we can optimize the expression.
+
+    https://github.com/3liz/qgis-atlasprint/issues/23
+    """
+    if expression.find('$id') < 0:
+        return expression
+
+    primary_keys = layer.primaryKeyAttributes()
+    if len(primary_keys) != 1:
+        return expression
+
+    field = layer.fields().at(0)
+    if field.type() != QVariant.Int:
+        return expression
+
+    expression = expression.replace('$id', '"{}"'.format(field.name()))
+    print(field.name())
+    # noinspection PyTypeChecker,PyCallByClass
+    QgsMessageLog.logMessage('$id has been replaced by "{}"'.format(field.name()), 'atlasprint', Qgis.Info)
+
+    return expression
