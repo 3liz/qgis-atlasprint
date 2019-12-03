@@ -16,16 +16,8 @@
 ***************************************************************************
 """
 
-import json
-import os
-
-from pathlib import Path
-
 from qgis.server import QgsServerFilter
-from qgis.core import Qgis, QgsMessageLog, QgsExpression
-from qgis.PyQt.QtCore import QByteArray
-
-from .core import print_atlas, AtlasPrintException
+from qgis.core import Qgis, QgsMessageLog
 
 
 class AtlasPrintFilter(QgsServerFilter):

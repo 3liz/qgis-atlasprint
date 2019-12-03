@@ -40,7 +40,7 @@ class AtlasPrintServer:
         QgsMessageLog.logMessage('SUCCESS - init', 'atlasprint', Qgis.Info)
 
         # debug
-        debug = os.getenv('QGIS_SERVER_PRINTATLAS_DEBUG', '').lower() in ('1','yes','y','true')
+        debug = os.getenv('QGIS_SERVER_PRINTATLAS_DEBUG', '').lower() in ('1', 'yes', 'y', 'true')
 
         # Register service
         try:
@@ -63,7 +63,7 @@ class AtlasPrintServer:
         from .atlasprintFilter import AtlasPrintFilter
         return AtlasPrintFilter(self.server_iface)
 
-    def createService(self, debug: bool=False) -> AtlasPrintService:
+    def createService(self, debug: bool = False) -> AtlasPrintService:
         """ Create  a new service instance
 
             Used for testing
