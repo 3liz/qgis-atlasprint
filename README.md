@@ -2,8 +2,8 @@
 
 ### Description
 
-This plugin adds a new request to QGIS 3 Server `GetPrintAtlas` which 
-allows to export a print layout with an atlas configured, but passing 
+This plugin adds a new service to QGIS 3 Server `ATLAS` which
+allows to export a print layout with an atlas configured, but passing
 an expression parameter to choose which feature is the current atlas feature.
 
 ![Logo of the plugin](atlasprintServer/icon.png)
@@ -12,9 +12,9 @@ an expression parameter to choose which feature is the current atlas feature.
 
 The layout must have an atlas enabled.
 
-This plugin adds some new requests to the WMS service:
-* `REQUEST=GETCAPABILITIESATLAS`: Return the plugin version
-* `REQUEST=GETPRINTATLAS`
+This plugin adds some new requests with the `ATLAS` service:
+* `REQUEST=GETCAPABILITIES`: Return the plugin version
+* `REQUEST=GETPRINT`
   * `TEMPLATE`: **required**, name of the layout to use.
   * `EXP_FILTER`: **required**, it must be HTML escaped.
     * For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
@@ -27,12 +27,16 @@ This plugin adds some new requests to the WMS service:
 
 The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.
 
+This plugin also adds some new requests to the `WMS` service for backward compatibility:
+* `REQUEST=GETCAPABILITIESATLAS` for `ATLAS` `GETCAPABILITIES`
+* `REQUEST=GETPRINTATLAS` for `ATLAS` `GETPRINT`
+
 ### Installation with Qgis server
 
-We assume you have a fully functional QGIS Server with Xvfb. 
+We assume you have a fully functional QGIS Server with Xvfb.
 See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
 
-We need to download the plugin, and tell QGIS Server where the plugins are 
+We need to download the plugin, and tell QGIS Server where the plugins are
 stored, then reload the web server.
 For example on Debian:
 
@@ -68,6 +72,6 @@ service apache2 reload
 
 You must define the `QGSRV_SERVER_PLUGINPATH` environment variable with Docker or the `pluginpath` setting
 in the `server` section of the configuration file.
-For more informations, see the [py-qgis-server](https://github.com/3liz/py-qgis-server/blob/master/README.md) documentation. 
+For more informations, see the [py-qgis-server](https://github.com/3liz/py-qgis-server/blob/master/README.md) documentation.
 
 
