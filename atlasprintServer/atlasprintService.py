@@ -16,11 +16,8 @@
 ***************************************************************************
 """
 
-import os
 import traceback
-import tempfile
 import json
-import re
 
 from pathlib import Path
 from configparser import ConfigParser
@@ -39,7 +36,7 @@ from qgis.server import (QgsService,
 from .core import print_atlas, AtlasPrintException
 
 
-def write_json_response( data: Dict[str,str], response: QgsServerResponse, code: int=200) -> None:
+def write_json_response( data: Dict[str, str], response: QgsServerResponse, code: int = 200) -> None:
     """ Write data as json response
     """
     response.setStatusCode(code)
@@ -52,21 +49,21 @@ class AtlasPrintError(Exception):
 
     def __init__(self, code: int, msg: str) -> None:
         super().__init__(msg)
-        self.msg  = msg
+        self.msg = msg
         self.code = code
-        QgsMessageLog.logMessage("Atlas print request error %s: %s" % (code,msg),"atlasprint",Qgis.Critical)
+        QgsMessageLog.logMessage("Atlas print request error %s: %s" % (code, msg),"atlasprint", Qgis.Critical)
 
     def formatResponse(self, response: QgsServerResponse) -> None:
         """ Format error response
         """
-        body = { 'status': 'fail', 'message': self.msg }
+        body = {'status': 'fail', 'message': self.msg}
         response.clear()
         write_json_response(body, response, self.code)
 
 
 class AtlasPrintService(QgsService):
 
-    def __init__(self, debug: bool=False) -> None:
+    def __init__(self, debug: bool = False) -> None:
         super().__init__()
 
         self.debugMode = debug
@@ -101,8 +98,8 @@ class AtlasPrintService(QgsService):
     def allowMethod(self, method: QgsServerRequest.Method) -> bool:
         """ Check supported HTTP methods
         """
-        return method in (QgsServerRequest.GetMethod,
-                          QgsServerRequest.PostMethod)
+        return method in (
+            QgsServerRequest.GetMethod, QgsServerRequest.PostMethod)
 
     def executeRequest(self, request: QgsServerRequest, response: QgsServerResponse,
                        project: QgsProject) -> None:
@@ -111,28 +108,29 @@ class AtlasPrintService(QgsService):
 
         params = request.parameters()
 
+        # noinspection PyBroadException
         try:
-            reqparam  = params.get('REQUEST','').lower()
+            reqparam = params.get('REQUEST', '').lower()
 
             if reqparam == 'getcapabilities':
                 self.get_capabilities(params, response, project)
             elif reqparam == 'getprint':
                 self.get_print(params, response, project)
             else:
-                raise AtlasPrintError(400, ("Invalid REQUEST parameter: "
-                                          "must be one of GetCapabilities, GetPrint,"
-                                          "found '%s'") % reqparam)
+                raise AtlasPrintError(
+                    400,
+                    "Invalid REQUEST parameter: must be one of GetCapabilities, GetPrint, found '{}'".format(reqparam))
 
         except AtlasPrintError as err:
             err.formatResponse(response)
-        except Exception as exc:
-            QgsMessageLog.logMessage("Unhandled exception:\n%s" % traceback.format_exc(),"atlasprint",Qgis.Critical)
-            err = AtlasPrintError(500,"Internal 'atlasprint' service error")
+        except Exception:
+            QgsMessageLog.logMessage("Unhandled exception:\n%s" % traceback.format_exc(), "atlasprint", Qgis.Critical)
+            err = AtlasPrintError(500, "Internal 'atlasprint' service error")
             err.formatResponse(response)
 
     # Atlas Service request methods
 
-    def get_capabilities(self, params:Dict[str,str], response: QgsServerResponse, project: QgsProject) -> None:
+    def get_capabilities(self, params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
         """ Get atlas capabilities based on metadata file
         """
         body = {
@@ -142,7 +140,8 @@ class AtlasPrintService(QgsService):
         write_json_response(body, response)
         return
 
-    def get_print(self, params:Dict[str,str], response: QgsServerResponse, project: QgsProject) -> None:
+    @staticmethod
+    def get_print(self, params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
         """ Get print document
         """
 
@@ -185,14 +184,14 @@ class AtlasPrintService(QgsService):
                 feature_filter=feature_filter
             )
         except AtlasPrintException as e:
-            raise AtlasPrintError(400,'ATLAS - Error from the user while generating the PDF: {}'.format(e))
-        except Exception as e:
-            QgsMessageLog.logMessage("Unhandled exception:\n%s" % traceback.format_exc(),"atlasprint",Qgis.Critical)
-            raise AtlasPrintError(500,"Internal 'atlasprint' service error")
+            raise AtlasPrintError(400, 'ATLAS - Error from the user while generating the PDF: {}'.format(e))
+        except Exception:
+            QgsMessageLog.logMessage("Unhandled exception:\n%s" % traceback.format_exc(), "atlasprint", Qgis.Critical)
+            raise AtlasPrintError(500, "Internal 'atlasprint' service error")
 
         path = Path(pdf_path)
         if not path.exists():
-            raise AtlasPrintError(404,"ATLAS PDF not found")
+            raise AtlasPrintError(404, "ATLAS PDF not found")
 
         # Send PDF
         response.setHeader('Content-type', 'application/pdf')
@@ -200,6 +199,6 @@ class AtlasPrintService(QgsService):
         try:
             response.write(path.read_bytes())
             path.unlink()
-        except:
-            QgsMessageLog.logMessage("Error occured while reading PDF file",'atlasprint',QGis.Critical)
+        except Exception:
+            QgsMessageLog.logMessage("Error occured while reading PDF file", 'atlasprint', Qgis.Critical)
             raise

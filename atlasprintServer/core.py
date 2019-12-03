@@ -74,8 +74,8 @@ def project_scales(project):
 def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
     """Generate an atlas.
 
-    :param project_path: Path to project to render as atlas.
-    :type project_path: basestring
+    :param project: The project to render as atlas.
+    :type project: QgsProject
 
     :param layout_name: Name of the layout.
     :type layout_name: basestring
