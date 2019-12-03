@@ -29,6 +29,7 @@ from typing import Dict
 
 from qgis.core import (Qgis,
                        QgsMessageLog,
+                       QgsExpression,
                        QgsProject)
 
 from qgis.server import (QgsService,
