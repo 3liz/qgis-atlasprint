@@ -14,6 +14,9 @@ from qgis.core import (
     QgsSettings,
     QgsLayoutItemMap,
     QgsLayoutExporter,
+    QgsExpression,
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
 )
 from qgis.PyQt.QtCore import QVariant
 
@@ -145,6 +148,21 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
 
     layer = atlas.coverageLayer()
     feature_filter = optimize_expression(layer, feature_filter)
+
+    expression = QgsExpression(feature_filter)
+    if expression.hasParserError():
+        raise AtlasPrintException('Expression is invalid, parser error: {}'.format(expression.parserErrorString()))
+
+    context = QgsExpressionContext()
+    context.appendScope(QgsExpressionContextUtils.globalScope())
+    context.appendScope(QgsExpressionContextUtils.projectScope(project))
+    context.appendScope(QgsExpressionContextUtils.layoutScope(layout))
+    context.appendScope(QgsExpressionContextUtils.atlasScope(atlas))
+    context.appendScope(QgsExpressionContextUtils.layerScope(layer))
+
+    expression.prepare(context)
+    if expression.hasEvalError():
+        raise AtlasPrintException('Expression is invalid, eval error: {}'.format(expression.evalErrorString()))
 
     atlas.setFilterFeatures(True)
     atlas.setFilterExpression(feature_filter)
