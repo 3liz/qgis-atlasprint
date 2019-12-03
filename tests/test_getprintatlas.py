@@ -48,8 +48,7 @@ def test_atlas_getprint_failed(client):
     # Make a failed request with invalid EXP_FILTER (unknown field)
     qs = "?SERVICE=ATLAS&REQUEST=GetPrint&MAP=atlas_simple.qgs&TEMPLATE=layout1&EXP_FILTER=fakeId in (1, 2)"
     rv = client.get(qs, projectfile)
-    # FIX TODO: the request failed and status_code is 500 instead of 400
-    assert rv.status_code == 500
+    assert rv.status_code == 400
 
     assert rv.headers.get('Content-Type','').find('application/json') == 0
 
