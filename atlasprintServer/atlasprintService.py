@@ -140,7 +140,6 @@ class AtlasPrintService(QgsService):
         write_json_response(body, response)
         return
 
-    @staticmethod
     def get_print(self, params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
         """ Get print document
         """
