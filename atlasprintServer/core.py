@@ -134,6 +134,7 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
         else:
             layout.reportContext().setPredefinedScales(scales)
 
+    atlas.setFilterFeatures(True)
     atlas.setFilterExpression(feature_filter)
 
     if not scales and layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
