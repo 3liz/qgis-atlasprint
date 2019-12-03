@@ -196,7 +196,6 @@ def optimize_expression(layer, expression):
         return expression
 
     expression = expression.replace('$id', '"{}"'.format(field.name()))
-    print(field.name())
     # noinspection PyTypeChecker,PyCallByClass
     QgsMessageLog.logMessage('$id has been replaced by "{}"'.format(field.name()), 'atlasprint', Qgis.Info)
 
