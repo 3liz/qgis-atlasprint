@@ -22,7 +22,7 @@
 
 # Server Plugin only
 def serverClassFactory(serverIface):  # pylint: disable=invalid-name
-    """Load atlasprintServer class from file atlasprint.
+    """Load atlasprint class from file atlasprint.
 
     :param serverIface: A QGIS Server interface instance.
     :type serverIface: QgsServerInterface

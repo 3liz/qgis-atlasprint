@@ -6,7 +6,7 @@ This plugin adds a new service to QGIS 3 Server `ATLAS` which
 allows to export a print layout with an atlas configured, but passing
 an expression parameter to choose which feature is the current atlas feature.
 
-![Logo of the plugin](atlasprintServer/icon.png)
+![Logo of the plugin](atlasprint/icon.png)
 
 ### API
 

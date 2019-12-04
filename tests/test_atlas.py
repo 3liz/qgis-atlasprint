@@ -12,7 +12,7 @@ __revision__ = '$Format:%H$'
 
 def test_global_scales(client):
     """Test we can fetch global scales from INI file or hardcoded scales."""
-    from atlasprintServer.core import global_scales
+    from atlasprint.core import global_scales
 
     scales = global_scales()
     expected = [
@@ -39,7 +39,7 @@ def test_not_supported_request(client):
 
 def test_optimize_filter():
     """Test we can optimize the feature filter if $id."""
-    from atlasprintServer.core import optimize_expression
+    from atlasprint.core import optimize_expression
     layer = QgsVectorLayer('None?field=primary:integer&field=name:string(20)', 'test', 'memory')
 
     # No primary key
