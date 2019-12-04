@@ -3,7 +3,7 @@ PLUGINNAME = atlasprint
 
 .PHONY: tests
 
-tests:
+test:
 	$(MAKE) -C tests
 
 release_zip:

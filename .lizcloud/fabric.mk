@@ -6,13 +6,13 @@ ifndef FABRIC
 FABRIC:=$(shell [ -e .fabricrc ] && echo "fab -c .fabricrc" || echo "fab")
 endif
 
-VERSION=$(shell ./metadata_key ../atlasprintServer/metadata.txt version)
+VERSION=$(shell ./metadata_key ../atlasprint/metadata.txt version)
 
 main:
 	echo "Makefile for packaging infra components: select a task"
 
 PACKAGE=qgis3_atlasprint
-FILES = ../atlasprintServer/* ../README.md
+FILES = ../atlasprint/* ../README.md
 
 
 build2/atlasprint:
