@@ -49,7 +49,7 @@ cd /srv/qgis/plugins
 wget "https://github.com/3liz/qgis-atlasprint/archive/master.zip"
 unzip master.zip
 mv qgis-atlasprint-master/atlasprint atlasprint
-rm -rf qgis-atlasprint-master
+rm -rf qgis-atlasprint-master master.zip
 ```
 
 #### Configure plugin for QGIS server FCGI module:
@@ -69,7 +69,7 @@ FcgidInitialEnv QGIS_PLUGINPATH "/srv/qgis/plugins/"
 service apache2 reload
 ```
 
-#### Configure the plugin path in  [py-qgis-server](https://github.com/3liz/py-qgis-server)
+#### Configure the plugin path in [py-qgis-server](https://github.com/3liz/py-qgis-server)
 
 You must define the `QGSRV_SERVER_PLUGINPATH` environment variable with Docker or the `pluginpath` setting
 in the `server` section of the configuration file.
