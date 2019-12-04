@@ -6,7 +6,7 @@ This plugin adds a new service to QGIS 3 Server `ATLAS` which
 allows to export a print layout with an atlas configured, but passing
 an expression parameter to choose which feature is the current atlas feature.
 
-![Logo of the plugin](atlasprint/icon.png)
+![Logo of the plugin](icon.png)
 
 ### API
 
@@ -31,7 +31,7 @@ This plugin also adds some new requests to the `WMS` service for backward compat
 * `REQUEST=GETCAPABILITIESATLAS` for `ATLAS` `GETCAPABILITIES`
 * `REQUEST=GETPRINTATLAS` for `ATLAS` `GETPRINT`
 
-### Installation with Qgis server
+### Installation with QGIS server
 
 We assume you have a fully functional QGIS Server with Xvfb.
 See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
@@ -48,12 +48,13 @@ mkdir -p /srv/qgis/plugins
 cd /srv/qgis/plugins
 wget "https://github.com/3liz/qgis-atlasprint/archive/master.zip"
 unzip master.zip
-mv qgis-atlasprint-master/atlasprintServer atlasprint
+mv qgis-atlasprint-master/atlasprint atlasprint
+rm -rf qgis-atlasprint-master
 ```
 
-#### Configure plugin for qgis sersver fcgi module:
+#### Configure plugin for QGIS server FCGI module:
 
-If you are using Nginx, Apache or supervisor to run the Qgis fcgi module you will need
+If you are using Nginx, Apache or supervisor to run the QGIS FCGI module you will need
 to define the `QGIS_PLUGINPATH` environment variable.
 
 Example with Apache:

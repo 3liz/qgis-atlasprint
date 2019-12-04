@@ -18,17 +18,18 @@
  ***************************************************************************/
 """
 
-__author__ = 'DOUCHIN Michaël'
-__date__ = 'October 2017'
-__copyright__ = '(C) 2017, DOUCHIN Michaël - 3Liz'
-
 import os
 
 from qgis.core import Qgis, QgsMessageLog
 from qgis.server import QgsServerInterface
 
-from .atlasprintService import AtlasPrintService
-from .atlasprintFilter import AtlasPrintFilter
+from .service import AtlasPrintService
+from .filter import AtlasPrintFilter
+
+__copyright__ = 'Copyright 2019, 3Liz'
+__license__ = 'GPL version 3'
+__email__ = 'info@3liz.org'
+__revision__ = '$Format:%H$'
 
 
 class AtlasPrintServer:
@@ -60,7 +61,7 @@ class AtlasPrintServer:
     def create_filter(self) -> AtlasPrintFilter:
         """Create a new filter instance - Used for tests
         """
-        from .atlasprintFilter import AtlasPrintFilter
+        from .filter import AtlasPrintFilter
         return AtlasPrintFilter(self.server_iface)
 
     def createService(self, debug: bool = False) -> AtlasPrintService:

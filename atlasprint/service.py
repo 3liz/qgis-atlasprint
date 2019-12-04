@@ -21,28 +21,35 @@ import json
 
 from pathlib import Path
 from configparser import ConfigParser
-
 from typing import Dict
 
-from qgis.core import (Qgis,
-                       QgsMessageLog,
-                       QgsExpression,
-                       QgsProject)
+from qgis.core import (
+    Qgis,
+    QgsMessageLog,
+    QgsExpression,
+    QgsProject,
+)
 
-from qgis.server import (QgsService,
-                         QgsServerRequest,
-                         QgsServerResponse)
+from qgis.server import (
+    QgsService,
+    QgsServerRequest,
+    QgsServerResponse,
+)
 
 from .core import print_atlas, AtlasPrintException
 
+__copyright__ = 'Copyright 2019, 3Liz'
+__license__ = 'GPL version 3'
+__email__ = 'info@3liz.org'
+__revision__ = '$Format:%H$'
 
-def write_json_response( data: Dict[str, str], response: QgsServerResponse, code: int = 200) -> None:
+
+def write_json_response(data: Dict[str, str], response: QgsServerResponse, code: int = 200) -> None:
     """ Write data as json response
     """
     response.setStatusCode(code)
     response.setHeader("Content-Type", "application/json")
     response.write(json.dumps(data))
-
 
 
 class AtlasPrintError(Exception):
@@ -51,7 +58,7 @@ class AtlasPrintError(Exception):
         super().__init__(msg)
         self.msg = msg
         self.code = code
-        QgsMessageLog.logMessage("Atlas print request error %s: %s" % (code, msg),"atlasprint", Qgis.Critical)
+        QgsMessageLog.logMessage("Atlas print request error %s: %s" % (code, msg), "atlasprint", Qgis.Critical)
 
     def formatResponse(self, response: QgsServerResponse) -> None:
         """ Format error response
@@ -65,12 +72,9 @@ class AtlasPrintService(QgsService):
 
     def __init__(self, debug: bool = False) -> None:
         super().__init__()
-
         self.debugMode = debug
-
         self.metadata = {}
         self.get_plugin_metadata()
-
 
     def get_plugin_metadata(self):
         """

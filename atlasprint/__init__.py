@@ -27,6 +27,6 @@ def serverClassFactory(serverIface):  # pylint: disable=invalid-name
     :param serverIface: A QGIS Server interface instance.
     :type serverIface: QgsServerInterface
     """
-    from .atlasprintServer import AtlasPrintServer
+    from .server import AtlasPrintServer
     return AtlasPrintServer(serverIface)
 

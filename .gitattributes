@@ -1,10 +1,8 @@
 .gitattributes export-ignore
 .gitignore export-ignore
-.lizcloud export-ignore
+/.lizcloud export-ignore
 .gitlab-ci.yml export-ignore
-test/* export-ignore
-help/* export-ignore
-build/* export-ignore
+/tests export-ignore
+atlasprint/icon.svg export-ignore
+readme.md export-ignore
 Makefile export-ignore
-pylintrc export-ignore
-atlasprint_dialog_base.ui export-ignore
