@@ -8,7 +8,7 @@ main:
 	echo "Makefile for packaging infra components: select a task"
 
 PACKAGE=qgis_atlasplugin
-FILES = ../atlasprint/* ../README.md
+FILES = ../atlasprint/*
 PACKAGEDIR=atlasprint
 
 build3/$(PACKAGEDIR):
