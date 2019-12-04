@@ -4,5 +4,5 @@
 .gitlab-ci.yml export-ignore
 /tests export-ignore
 atlasprint/icon.svg export-ignore
-readme.md export-ignore
+README.md export-ignore
 Makefile export-ignore

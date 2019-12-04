@@ -5,7 +5,7 @@
 ![Logo of the plugin](atlasprint/icon.png)
 
 For more detailed information about installation, usage etc, read in source code folder
- **atlasprint** the [readme.md](./atlasprint/readme.md).
+ **atlasprint** the [README.md](./atlasprint/README.md).
  
  #### Makefile
  
