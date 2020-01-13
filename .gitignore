@@ -51,3 +51,4 @@ build3
 __output__
 
 atlasprint.zip
+tests/data/atlas_simple.qgs.cfg
