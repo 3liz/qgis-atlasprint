@@ -8,6 +8,10 @@ an expression parameter to choose which feature is the current atlas feature.
 
 ![Logo of the plugin](icon.png)
 
+### Versions
+
+**Be careful**, if you use relation in your project and you use them in your layout, you should use 1.2.4 with QGIS < 3.10.1. A bug has been fixed in 3.10.2 about relation in a layout. Otherwise, you can use version 3 of the plugin.
+
 ### API
 
 The layout must have an atlas enabled.
