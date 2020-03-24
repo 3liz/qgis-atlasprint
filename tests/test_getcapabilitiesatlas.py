@@ -8,15 +8,13 @@ __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
 __revision__ = '$Format:%H$'
 
+PROJECT_FILE = 'france_parts.qgs'
+
 
 def test_atlas_getcapabilities(client):
-    """  Test getcapabilites response
-    """
-    projectfile = "france_parts.qgs"
-
-    # Make a request
-    qs = "?SERVICE=ATLAS&REQUEST=GetCapabilities&MAP=france_parts.qgs"
-    rv = client.get(qs, projectfile)
+    """Test GetCapabilites."""
+    qs = '?SERVICE=ATLAS&REQUEST=GetCapabilities&MAP={}'.format(PROJECT_FILE)
+    rv = client.get(qs, PROJECT_FILE)
     assert rv.status_code == 200
 
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
@@ -24,20 +22,16 @@ def test_atlas_getcapabilities(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'success'
 
-    assert ('metadata' in b)
-    assert ('name' in b['metadata'])
+    assert 'metadata' in b
+    assert 'name' in b['metadata']
     assert b['metadata']['name'] == 'atlasprint'
-    assert ('version' in b['metadata'])
+    assert 'version' in b['metadata']
 
 
 def test_getcapabilitiesatlas(client):
-    """  Test getcapabilites response
-    """
-    projectfile = "france_parts.qgs"
-
-    # Make a request
-    qs = "?SERVICE=WMS&REQUEST=GetCapabilitiesAtlas&MAP=france_parts.qgs"
-    rv = client.get(qs, projectfile)
+    """Test GetCapabilites Atlas."""
+    qs = '?SERVICE=WMS&REQUEST=GetCapabilitiesAtlas&MAP={}'.format(PROJECT_FILE)
+    rv = client.get(qs, PROJECT_FILE)
     assert rv.status_code == 200
 
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
@@ -45,7 +39,7 @@ def test_getcapabilitiesatlas(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'success'
 
-    assert ('metadata' in b)
-    assert ('name' in b['metadata'])
+    assert 'metadata' in b
+    assert 'name' in b['metadata']
     assert b['metadata']['name'] == 'atlasprint'
-    assert ('version' in b['metadata'])
+    assert 'version' in b['metadata']

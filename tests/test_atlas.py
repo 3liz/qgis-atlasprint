@@ -9,6 +9,8 @@ __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
 __revision__ = '$Format:%H$'
 
+PROJECT_FILE = 'france_parts.qgs'
+
 
 def test_global_scales(client):
     """Test we can fetch global scales from INI file or hardcoded scales."""
@@ -22,13 +24,10 @@ def test_global_scales(client):
 
 
 def test_not_supported_request(client):
-    """  Test getcapabilites response
-    """
-    projectfile = "france_parts.qgs"
-
+    """Test not supported GetCapabilities."""
     # Make a request
-    qs = "?SERVICE=ATLAS&REQUEST=Get&MAP=france_parts.qgs"
-    rv = client.get(qs, projectfile)
+    qs = '?SERVICE=ATLAS&REQUEST=Get&MAP={}'.format(PROJECT_FILE)
+    rv = client.get(qs, PROJECT_FILE)
     assert rv.status_code == 400
 
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
