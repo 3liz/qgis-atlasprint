@@ -78,5 +78,3 @@ service apache2 reload
 You must define the `QGSRV_SERVER_PLUGINPATH` environment variable with Docker or the `pluginpath` setting
 in the `server` section of the configuration file.
 For more informations, see the [py-qgis-server](https://github.com/3liz/py-qgis-server/blob/master/README.md) documentation.
-
-
