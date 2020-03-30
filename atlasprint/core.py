@@ -149,10 +149,9 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, *
     
     for key, value in kwargs.items():
         QgsMessageLog.logMessage('Additional parameters: {} = {}'.format(key, value), 'atlasprint', Qgis.Info)
-        if layout.itemById(key.lower()):
-            if isinstance(layout.itemById(key.lower()), QgsLayoutItemLabel):
-                item = layout.itemById(key.lower())
-                item.setText(value)
+        item = layout.itemById(key.lower())
+        if isinstance(item, QgsLayoutItemLabel):
+            item.setText(value)
 
     layer = atlas.coverageLayer()
     feature_filter = optimize_expression(layer, feature_filter)
