@@ -29,6 +29,8 @@ This plugin adds some new requests with the `ATLAS` service:
     * Comma separated list of values. If set, these predefined scales are used. Exclusive with `SCALE`.
     * For instance `SCALES=400,1000`.
 
+The plugin also accept arbitrary key value pairs to manipulate item label text in composition. The key is the id (lower case) of the label text component and the value, the content that will override it default content.
+
 The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.
 
 This plugin also adds some new requests to the `WMS` service for backward compatibility:
