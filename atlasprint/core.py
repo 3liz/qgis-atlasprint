@@ -12,6 +12,7 @@ from qgis.core import (
     QgsMessageLog,
     QgsMasterLayoutInterface,
     QgsSettings,
+    QgsLayoutItemLabel,
     QgsLayoutItemMap,
     QgsLayoutExporter,
     QgsExpression,
@@ -83,7 +84,7 @@ def project_scales(project):
     return scales
 
 
-def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
+def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, **kwargs):
     """Generate an atlas.
 
     :param project: The project to render as atlas.
@@ -145,6 +146,12 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None):
             settings.predefinedMapScales = scales
         else:
             layout.reportContext().setPredefinedScales(scales)
+    
+    for key, value in kwargs.items():
+        QgsMessageLog.logMessage('Additional parameters: {} = {}'.format(key, value), 'atlasprint', Qgis.Info)
+        item = layout.itemById(key.lower())
+        if isinstance(item, QgsLayoutItemLabel):
+            item.setText(value)
 
     layer = atlas.coverageLayer()
     feature_filter = optimize_expression(layer, feature_filter)
