@@ -14,6 +14,4 @@ For more detailed information about installation, usage etc, read in source code
  
  ```bash
 make tests
-make release_zip
-make release_upload
 ```

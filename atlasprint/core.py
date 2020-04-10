@@ -148,10 +148,12 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, *
             layout.reportContext().setPredefinedScales(scales)
     
     for key, value in kwargs.items():
-        QgsMessageLog.logMessage('Additional parameters: {} = {}'.format(key, value), 'atlasprint', Qgis.Info)
+        found = False
         item = layout.itemById(key.lower())
         if isinstance(item, QgsLayoutItemLabel):
             item.setText(value)
+            found = True
+        QgsMessageLog.logMessage('Additional parameters: {} found in layout {}, value {}'.format(key, found, value), 'atlasprint', Qgis.Info)
 
     layer = atlas.coverageLayer()
     feature_filter = optimize_expression(layer, feature_filter)
