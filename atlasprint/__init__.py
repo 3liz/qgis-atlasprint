@@ -20,7 +20,27 @@
 """
 
 
-# Server Plugin only
+def classFactory(iface):
+    from qgis.PyQt.QtWidgets import QMessageBox
+
+    class Nothing:
+
+        def __init__(self, iface):
+            self.iface = iface
+
+        def initGui(self):
+            QMessageBox.warning(
+                self.iface.mainWindow(),
+                'AtlasPrint plugin',
+                'AtlasPrint is plugin for QGIS Server. There is nothing in QGIS Desktop.',
+            )
+
+        def unload(self):
+            pass
+
+    return Nothing(iface)
+
+
 def serverClassFactory(serverIface):  # pylint: disable=invalid-name
     """Load atlasprint class from file atlasprint.
 
