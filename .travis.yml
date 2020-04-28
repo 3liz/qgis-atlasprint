@@ -7,57 +7,47 @@ python: 3.7
 services:
   - docker
 
-#branches:
-#  only:
-#    - master
-#    - dev
+branches:
+  only:
+    - master
+    - "/^v.*$/"
 
 jobs:
   include:
     - stage: Run tests server
       name: QGIS Server 3.4
-
       before_install:
         - docker pull 3liz/qgis-platform:3.4
-
       install:
         - cd ${TRAVIS_BUILD_DIR}
         - mkdir .local
         - mkdir .cache
-
       script:
         - docker run --rm --name qgis-server -u $(id -u) -v ${TRAVIS_BUILD_DIR}/.cache:/.cache -e PIP_CACHE_DIR=/.cache -w /src/tests -e PYTEST_ADDOPTS="" -v ${TRAVIS_BUILD_DIR}:/src -v ${TRAVIS_BUILD_DIR}/.local:/.local 3liz/qgis-platform:3.4 ./run-tests.sh
 
     - stage: Run tests server
       name: QGIS Server 3.10
-
       before_install:
         - docker pull 3liz/qgis-platform:3.10
-
       install:
         - cd ${TRAVIS_BUILD_DIR}
         - mkdir .local
         - mkdir .cache
-
       script:
         - docker run --rm --name qgis-server -u $(id -u) -v ${TRAVIS_BUILD_DIR}/.cache:/.cache -e PIP_CACHE_DIR=/.cache -w /src/tests -e PYTEST_ADDOPTS="" -v ${TRAVIS_BUILD_DIR}:/src -v ${TRAVIS_BUILD_DIR}/.local:/.local 3liz/qgis-platform:3.10 ./run-tests.sh
 
-
     - stage: Deploy
       if: tag IS present
+      condition: "$TRAVIS_TAG =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+"
       name: Create release, plugins.qgis.org
-
       install:
-        - pip3 install qgis-plugin-ci
-
+        - pip3 install git+https://github.com/Gustry/qgis-plugin-ci.git
       before_deploy:
-        - export RELEASE_TITLE="Release of $TRAVIS_TAG"
-
+        - export RELEASE_TITLE=${TRAVIS_TAG:1}
       script:
         - qgis-plugin-ci -v
 
       deploy:
-
         - provider: releases
           edge: true
           file: .
