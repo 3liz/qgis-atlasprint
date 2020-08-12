@@ -179,7 +179,8 @@ class AtlasPrintService(QgsService):
                 except ValueError:
                     raise AtlasPrintException('Invalid number in SCALES.')
 
-            additional_params = {k: v for k, v in params.items() if k not in ['TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES']}
+            additional_params = {
+                k: v for k, v in params.items() if k not in ['TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES']}
 
             pdf_path = print_atlas(
                 project=project,

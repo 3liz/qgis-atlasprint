@@ -49,4 +49,3 @@ def serverClassFactory(serverIface):  # pylint: disable=invalid-name
     """
     from .server import AtlasPrintServer
     return AtlasPrintServer(serverIface)
-

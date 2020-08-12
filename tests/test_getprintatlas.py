@@ -48,7 +48,8 @@ def test_atlas_getprint_failed(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
     assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: Expression is invalid: \nsyntax error, unexpected $end, expecting COMMA or \')\'')
+        'ATLAS - Error from the user while generating the PDF: Expression is invalid: \n'
+        'syntax error, unexpected $end, expecting COMMA or \')\'')
 
     # Make a failed request with invalid EXP_FILTER (unknown field)
     qs = (
@@ -62,7 +63,9 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Expression is invalid, eval error: Column \'fakeId\' not found'
+    assert b['message'] == (
+        'ATLAS - Error from the user while generating the PDF: Expression is invalid, eval error: '
+        'Column \'fakeId\' not found')
 
     # Make a failed request with invalid TEMPLATE (unknown layout)
     qs = (
@@ -91,7 +94,8 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: SCALE and SCALES can not be used together.'
+    assert b['message'] == (
+        'ATLAS - Error from the user while generating the PDF: SCALE and SCALES can not be used together.')
 
     # Make a failed request with invalid SCALE
     qs = (

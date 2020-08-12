@@ -8,7 +8,6 @@ from uuid import uuid4
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
 from qgis.core import (
     Qgis,
-    QgsProject,
     QgsMessageLog,
     QgsMasterLayoutInterface,
     QgsSettings,
@@ -122,9 +121,9 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, *
     if master_layout.layoutType() != QgsMasterLayoutInterface.PrintLayout:
         raise AtlasPrintException('The layout is not a print layout')
 
-    for l in manager.printLayouts():
-        if l.name() == layout_name:
-            layout = l
+    for print_layout in manager.printLayouts():
+        if print_layout.name() == layout_name:
+            layout = print_layout
             break
     else:
         raise AtlasPrintException('The layout is not found')
@@ -146,14 +145,15 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, *
             settings.predefinedMapScales = scales
         else:
             layout.reportContext().setPredefinedScales(scales)
-    
+
     for key, value in kwargs.items():
         found = False
         item = layout.itemById(key.lower())
         if isinstance(item, QgsLayoutItemLabel):
             item.setText(value)
             found = True
-        QgsMessageLog.logMessage('Additional parameters: {} found in layout {}, value {}'.format(key, found, value), 'atlasprint', Qgis.Info)
+        QgsMessageLog.logMessage(
+            'Additional parameters: {} found in layout {}, value {}'.format(key, found, value), 'atlasprint', Qgis.Info)
 
     layer = atlas.coverageLayer()
     feature_filter = optimize_expression(layer, feature_filter)
@@ -185,7 +185,10 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, *
             use_project = len(map_scales) == 0
 
         if not use_project or len(map_scales) == 0:
-            QgsMessageLog.logMessage('Map scales not found in project, fetching predefined map scales in global config', 'atlasprint', Qgis.Info)
+            QgsMessageLog.logMessage(
+                'Map scales not found in project, fetching predefined map scales in global config',
+                'atlasprint',
+                Qgis.Info)
             map_scales = global_scales()
 
         if Qgis.QGIS_VERSION_INT >= 30900:
