@@ -83,7 +83,7 @@ def project_scales(project):
     return scales
 
 
-def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, **kwargs):
+def print_layout(project, layout_name, feature_filter, scales=None, scale=None, **kwargs):
     """Generate an atlas.
 
     :param project: The project to render as atlas.
@@ -201,10 +201,10 @@ def print_atlas(project, layout_name, feature_filter, scales=None, scale=None, *
         '{}_{}.pdf'.format(layout_name, uuid4())
     )
     exporter = QgsLayoutExporter(layout)
-    result = exporter.exportToPdf(atlas, export_path, settings)
+    result, error = exporter.exportToPdf(atlas, export_path, settings)
 
-    if result[0] != QgsLayoutExporter.Success and not os.path.isfile(export_path):
-        raise Exception('export not generated {}'.format(export_path))
+    if result != QgsLayoutExporter.Success and not os.path.isfile(export_path):
+        raise Exception('export not generated {} ({})'.format(export_path, error))
 
     return export_path
 

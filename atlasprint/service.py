@@ -36,7 +36,7 @@ from qgis.server import (
     QgsServerResponse,
 )
 
-from .core import print_atlas, AtlasPrintException
+from .core import print_layout, AtlasPrintException
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'
@@ -182,7 +182,7 @@ class AtlasPrintService(QgsService):
             additional_params = {
                 k: v for k, v in params.items() if k not in ['TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES']}
 
-            pdf_path = print_atlas(
+            pdf_path = print_layout(
                 project=project,
                 layout_name=params['TEMPLATE'],
                 scale=scale,
