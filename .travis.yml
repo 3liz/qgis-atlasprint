@@ -18,30 +18,28 @@ env:
     - QGIS_VERSION=3.10
     - QGIS_VERSION=3.14
 
+before_install:
+  - docker pull 3liz/qgis-platform:${QGIS_VERSION}
+install:
+  - cd ${TRAVIS_BUILD_DIR}
+  - mkdir .local
+  - mkdir .cache
+script:
+  - >
+    docker run
+    --rm --name qgis-server
+    -u $(id -u)
+    -v ${TRAVIS_BUILD_DIR}/.cache:/.cache
+    -e PIP_CACHE_DIR=/.cache
+    -w /src/tests
+    -e PYTEST_ADDOPTS=""
+    -v ${TRAVIS_BUILD_DIR}:/src
+    -v ${TRAVIS_BUILD_DIR}/.local:/.local
+    3liz/qgis-platform:${QGIS_VERSION}
+    ./run-tests.sh
+
 jobs:
   include:
-    - stage: Run tests server
-      name: QGIS Server ${QGIS_VERSION}
-      before_install:
-        - docker pull 3liz/qgis-platform:${QGIS_VERSION}
-      install:
-        - cd ${TRAVIS_BUILD_DIR}
-        - mkdir .local
-        - mkdir .cache
-      script:
-        - >
-          docker run
-          --rm --name qgis-server
-          -u $(id -u)
-          -v ${TRAVIS_BUILD_DIR}/.cache:/.cache
-          -e PIP_CACHE_DIR=/.cache
-          -w /src/tests
-          -e PYTEST_ADDOPTS=""
-          -v ${TRAVIS_BUILD_DIR}:/src
-          -v ${TRAVIS_BUILD_DIR}/.local:/.local
-          3liz/qgis-platform:${QGIS_VERSION}
-          ./run-tests.sh
-
     - stage: Deploy
       if: tag IS present
       env: # no environment variables - overwrite with empty to remove matrix
