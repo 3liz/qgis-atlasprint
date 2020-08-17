@@ -83,17 +83,18 @@ def project_scales(project):
     return scales
 
 
-def print_layout(project, layout_name, feature_filter, scales=None, scale=None, **kwargs):
-    """Generate an atlas.
+def print_layout(project, layout_name, feature_filter: str = None, scales=None, scale=None, **kwargs):
+    """Generate a PDF for an atlas or a report.
 
-    :param project: The project to render as atlas.
+    :param project: The QGIS project.
     :type project: QgsProject
 
-    :param layout_name: Name of the layout.
+    :param layout_name: Name of the layout of the atlas or report.
     :type layout_name: basestring
 
     :param feature_filter: QGIS Expression to use to select the feature.
     It can return many features, a multiple pages PDF will be returned.
+    This is required to print atlas, not report
     :type feature_filter: basestring
 
     :param scale: A scale to force in the atlas context. Default to None.
@@ -134,6 +135,10 @@ def print_layout(project, layout_name, feature_filter, scales=None, scale=None, 
             raise AtlasPrintException('The layout is not enabled for an atlas')
 
         layer = atlas.coverageLayer()
+
+        if feature_filter is None:
+            raise AtlasPrintException('EXP_FILTER is mandatory to print an atlas layout')
+
         feature_filter = optimize_expression(layer, feature_filter)
 
         expression = QgsExpression(feature_filter)
