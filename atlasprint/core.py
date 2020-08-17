@@ -114,94 +114,97 @@ def print_layout(project, layout_name, feature_filter, scales=None, scale=None, 
     bridge.setCanvasLayers()
     manager = project.layoutManager()
     master_layout = manager.layoutByName(layout_name)
-
-    if not master_layout:
-        raise AtlasPrintException('Layout not found')
-
-    if master_layout.layoutType() != QgsMasterLayoutInterface.PrintLayout:
-        raise AtlasPrintException('The layout is not a print layout')
-
-    for print_layout in manager.printLayouts():
-        if print_layout.name() == layout_name:
-            layout = print_layout
-            break
-    else:
-        raise AtlasPrintException('The layout is not found')
-
-    atlas = layout.atlas()
-
-    if not atlas.enabled():
-        raise AtlasPrintException('The layout is not enabled for an atlas')
-
     settings = QgsLayoutExporter.PdfExportSettings()
 
-    if scale:
-        layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
-        layout.referenceMap().setScale(scale)
+    atlas = None
+    atlas_layout = None
+    report_layout = None
 
-    if scales:
-        layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
-        if Qgis.QGIS_VERSION_INT >= 30900:
-            settings.predefinedMapScales = scales
-        else:
-            layout.reportContext().setPredefinedScales(scales)
+    if not master_layout:
+        raise AtlasPrintException('Layout `{}` not found'.format(layout_name))
+
+    if master_layout.layoutType() == QgsMasterLayoutInterface.PrintLayout:
+        for _print_layout in manager.printLayouts():
+            if _print_layout.name() == layout_name:
+                atlas_layout = _print_layout
+                break
+
+        atlas = atlas_layout.atlas()
+        if not atlas.enabled():
+            raise AtlasPrintException('The layout is not enabled for an atlas')
+
+        layer = atlas.coverageLayer()
+        feature_filter = optimize_expression(layer, feature_filter)
+
+        expression = QgsExpression(feature_filter)
+        if expression.hasParserError():
+            raise AtlasPrintException('Expression is invalid, parser error: {}'.format(expression.parserErrorString()))
+
+        context = QgsExpressionContext()
+        context.appendScope(QgsExpressionContextUtils.globalScope())
+        context.appendScope(QgsExpressionContextUtils.projectScope(project))
+        context.appendScope(QgsExpressionContextUtils.layoutScope(atlas_layout))
+        context.appendScope(QgsExpressionContextUtils.atlasScope(atlas))
+        context.appendScope(QgsExpressionContextUtils.layerScope(layer))
+        expression.prepare(context)
+        if expression.hasEvalError():
+            raise AtlasPrintException('Expression is invalid, eval error: {}'.format(expression.evalErrorString()))
+
+        atlas.setFilterFeatures(True)
+        atlas.setFilterExpression(feature_filter)
+
+        if scale:
+            atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
+            atlas_layout.referenceMap().setScale(scale)
+
+        if scales:
+            atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
+            if Qgis.QGIS_VERSION_INT >= 30900:
+                settings.predefinedMapScales = scales
+            else:
+                atlas_layout.reportContext().setPredefinedScales(scales)
+
+        if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
+            if Qgis.QGIS_VERSION_INT >= 30900:
+                use_project = project.useProjectScales()
+                map_scales = project.mapScales()
+            else:
+                map_scales = project_scales(project)
+                use_project = len(map_scales) == 0
+
+            if not use_project or len(map_scales) == 0:
+                QgsMessageLog.logMessage(
+                    'Map scales not found in project, fetching predefined map scales in global config',
+                    'atlasprint',
+                    Qgis.Info)
+                map_scales = global_scales()
+
+            if Qgis.QGIS_VERSION_INT >= 30900:
+                settings.predefinedMapScales = map_scales
+            else:
+                atlas_layout.reportContext().setPredefinedScales(map_scales)
+
+    elif master_layout.layoutType() == QgsMasterLayoutInterface.Report:
+        report_layout = master_layout
+
+    else:
+        raise AtlasPrintException('The layout is not supported by the plugin')
 
     for key, value in kwargs.items():
         found = False
-        item = layout.itemById(key.lower())
-        if isinstance(item, QgsLayoutItemLabel):
-            item.setText(value)
-            found = True
+        if atlas_layout:
+            item = atlas_layout.itemById(key.lower())
+            if isinstance(item, QgsLayoutItemLabel):
+                item.setText(value)
+                found = True
         QgsMessageLog.logMessage(
             'Additional parameters: {} found in layout {}, value {}'.format(key, found, value), 'atlasprint', Qgis.Info)
-
-    layer = atlas.coverageLayer()
-    feature_filter = optimize_expression(layer, feature_filter)
-
-    expression = QgsExpression(feature_filter)
-    if expression.hasParserError():
-        raise AtlasPrintException('Expression is invalid, parser error: {}'.format(expression.parserErrorString()))
-
-    context = QgsExpressionContext()
-    context.appendScope(QgsExpressionContextUtils.globalScope())
-    context.appendScope(QgsExpressionContextUtils.projectScope(project))
-    context.appendScope(QgsExpressionContextUtils.layoutScope(layout))
-    context.appendScope(QgsExpressionContextUtils.atlasScope(atlas))
-    context.appendScope(QgsExpressionContextUtils.layerScope(layer))
-
-    expression.prepare(context)
-    if expression.hasEvalError():
-        raise AtlasPrintException('Expression is invalid, eval error: {}'.format(expression.evalErrorString()))
-
-    atlas.setFilterFeatures(True)
-    atlas.setFilterExpression(feature_filter)
-
-    if not scales and layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
-        if Qgis.QGIS_VERSION_INT >= 30900:
-            use_project = project.useProjectScales()
-            map_scales = project.mapScales()
-        else:
-            map_scales = project_scales(project)
-            use_project = len(map_scales) == 0
-
-        if not use_project or len(map_scales) == 0:
-            QgsMessageLog.logMessage(
-                'Map scales not found in project, fetching predefined map scales in global config',
-                'atlasprint',
-                Qgis.Info)
-            map_scales = global_scales()
-
-        if Qgis.QGIS_VERSION_INT >= 30900:
-            settings.predefinedMapScales = map_scales
-        else:
-            layout.reportContext().setPredefinedScales(map_scales)
 
     export_path = os.path.join(
         tempfile.gettempdir(),
         '{}_{}.pdf'.format(layout_name, uuid4())
     )
-    exporter = QgsLayoutExporter(layout)
-    result, error = exporter.exportToPdf(atlas, export_path, settings)
+    result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, export_path, settings)
 
     if result != QgsLayoutExporter.Success and not os.path.isfile(export_path):
         raise Exception('export not generated {} ({})'.format(export_path, error))
