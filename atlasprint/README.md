@@ -3,14 +3,16 @@
 ### Description
 
 This plugin adds a new service to QGIS 3 Server `ATLAS` which
-allows to export a print layout with an atlas configured, but passing
-an expression parameter to choose which feature is the current atlas feature.
+allows to export a report or print layout with an atlas configured (by passing
+an expression parameter to choose which feature is the current atlas feature).
 
 ![Logo of the plugin](icon.png)
 
 ### Versions
 
-**Be careful**, if you use relation in your project and you use them in your layout, you should use 1.2.4 with QGIS < 3.10.1. A bug has been fixed in 3.10.2 about relation in a layout. Otherwise, you can use version 3 of the plugin.
+**Be careful**, if you use relation in your project and you use them in your layout, 
+you should use 1.2.4 with QGIS < 3.10.1. A bug has been fixed in 3.10.2 about relation in a layout. 
+Otherwise, you can use version 3 of the plugin.
 
 ### API
 
@@ -20,7 +22,7 @@ This plugin adds some new requests with the `ATLAS` service:
 * `REQUEST=GETCAPABILITIES`: Return the plugin version
 * `REQUEST=GETPRINT`
   * `TEMPLATE`: **required**, name of the layout to use.
-  * `EXP_FILTER`: **required**, it must be HTML escaped.
+  * `EXP_FILTER`: **required** for atlases, it must be HTML escaped.
     * For example, to request `fid=12`, it must be `&EXP_FILTER=fid%3D12`.
     * An expression returning many features can also be used, for instance `&EXP_FILTER=id in ('1','2')` will return a PDF with 2 pages.
   * `SCALE`: *optional*. If not provided, the default configuration in the atlas is used.
