@@ -11,7 +11,7 @@ VERSION=$(shell ./metadata_key ../atlasprint/metadata.txt version)
 main:
 	echo "Makefile for packaging infra components: select a task"
 
-PACKAGE=qgis3_atlasprint
+PACKAGE=qgis310_atlasprint
 FILES = ../atlasprint/*
 
 

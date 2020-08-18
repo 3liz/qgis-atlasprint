@@ -74,7 +74,7 @@ build_2:
 deploy_snap_2:
   stage: deploy
   script:
-    - sudo -u fabric fab snap deploy:qgis3_atlasprint,force=true
+    - sudo -u fabric fab snap deploy:qgis310_atlasprint,force=true
   environment:
     name: snap
   dependencies:
@@ -85,7 +85,7 @@ deploy_snap_2:
 release_prod_2:
   stage: release
   script:
-    - sudo -u fabric fab prod release:qgis3_atlasprint
+    - sudo -u fabric fab prod release:qgis310_atlasprint
   environment:
     name: production
   dependencies:
