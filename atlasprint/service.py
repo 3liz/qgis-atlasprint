@@ -36,7 +36,7 @@ from qgis.server import (
     QgsServerResponse,
 )
 
-from .core import print_atlas, AtlasPrintException
+from .core import print_layout, AtlasPrintException
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'
@@ -149,7 +149,7 @@ class AtlasPrintService(QgsService):
         """
 
         template = params.get('TEMPLATE')
-        feature_filter = params.get('EXP_FILTER')
+        feature_filter = params.get('EXP_FILTER', None)
         scale = params.get('SCALE')
         scales = params.get('SCALES')
 
@@ -157,12 +157,10 @@ class AtlasPrintService(QgsService):
             if not template:
                 raise AtlasPrintException('TEMPLATE is required')
 
-            if not feature_filter:
-                raise AtlasPrintException('EXP_FILTER is required')
-
-            expression = QgsExpression(feature_filter)
-            if expression.hasParserError():
-                raise AtlasPrintException('Expression is invalid: {}'.format(expression.parserErrorString()))
+            if feature_filter:
+                expression = QgsExpression(feature_filter)
+                if expression.hasParserError():
+                    raise AtlasPrintException('Expression is invalid: {}'.format(expression.parserErrorString()))
 
             if scale and scales:
                 raise AtlasPrintException('SCALE and SCALES can not be used together.')
@@ -180,9 +178,10 @@ class AtlasPrintService(QgsService):
                     raise AtlasPrintException('Invalid number in SCALES.')
 
             additional_params = {
-                k: v for k, v in params.items() if k not in ['TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES']}
+                k: v for k, v in params.items() if k not in ['TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES']
+            }
 
-            pdf_path = print_atlas(
+            pdf_path = print_layout(
                 project=project,
                 layout_name=params['TEMPLATE'],
                 scale=scale,

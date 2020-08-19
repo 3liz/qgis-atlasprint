@@ -27,7 +27,7 @@ def test_atlas_getprint_failed(client):
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
-        'MAP={}&TEMPLATE=layout1'.format(PROJECT_ATLAS_SIMPLE))
+        'MAP={}&TEMPLATE=layout1-atlas'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 400
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
@@ -40,7 +40,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=id in (1, 2'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 400
@@ -56,7 +56,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=fakeId in (1, 2)'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 400
@@ -72,7 +72,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=Fakelayout1&'
+        'TEMPLATE=Fakelayout1-atlas&'
         'EXP_FILTER=id in (1, 2)'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 400
@@ -86,7 +86,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=id in (1, 2)&'
         'SCALE=5000&SCALES=10000,5000'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
@@ -102,7 +102,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=id in (1, 2)&'
         'SCALE=5000n'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
@@ -117,7 +117,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=id in (1, 2)&'
         'SCALES=10000n,5000'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
@@ -132,7 +132,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=id in (1, 2)&'
         'SCALES=10000,5000'.format(PROJECT_NO_ATLAS))
     rv = client.get(qs, PROJECT_NO_ATLAS)
@@ -143,14 +143,28 @@ def test_atlas_getprint_failed(client):
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout not found'
 
 
-def test_atlas_getprint(client):
-    """Test Atlas GetPrint response."""
+def test_atlas_getprint_atlas(client):
+    """Test Atlas GetPrint response for atlas."""
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1&'
+        'TEMPLATE=layout1-atlas&'
         'EXP_FILTER=id in (1, 2)'.format(PROJECT_ATLAS_SIMPLE))
+    rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
+    assert rv.status_code == 200
+
+    assert rv.headers.get('Content-Type', '') == 'application/pdf'
+    assert rv.headers.get('Content-Type', '').find('application/pdf') == 0
+
+
+def test_atlas_getprint_report(client):
+    """Test Atlas GetPrint response for report."""
+    qs = (
+        '?SERVICE=ATLAS&'
+        'REQUEST=GetPrint&'
+        'MAP={}&'
+        'TEMPLATE=layout2-report&'.format(PROJECT_ATLAS_SIMPLE))
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 200
 
