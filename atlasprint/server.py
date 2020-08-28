@@ -20,11 +20,12 @@
 
 import os
 
-from qgis.core import Qgis, QgsMessageLog
+from qgis.core import Qgis
 from qgis.server import QgsServerInterface
 
-from .service import AtlasPrintService
 from .filter import AtlasPrintFilter
+from .logger import Logger
+from .service import AtlasPrintService
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'
@@ -38,7 +39,8 @@ class AtlasPrintServer:
 
     def __init__(self, serverIface: 'QgsServerInterface') -> None:
         self.server_iface = serverIface
-        QgsMessageLog.logMessage('SUCCESS - init', 'atlasprint', Qgis.Info)
+        self.logger = Logger()
+        self.logger.info('SUCCESS - init')
 
         # debug
         debug = os.getenv('QGIS_SERVER_PRINTATLAS_DEBUG', '').lower() in ('1', 'yes', 'y', 'true')
@@ -48,14 +50,14 @@ class AtlasPrintServer:
             reg = serverIface.serviceRegistry()
             reg.registerService(AtlasPrintService(debug=debug))
         except Exception as e:
-            QgsMessageLog.logMessage('Error loading filter atlasprint : {}'.format(e), 'atlasprint', Qgis.Critical)
+            self.logger.critical('Error loading filter atlasprint : {}'.format(e))
             raise
 
         # Add filter
         try:
             serverIface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
         except Exception as e:
-            QgsMessageLog.logMessage('Error loading filter atlasprint : {}'.format(e), 'atlasprint', Qgis.Critical)
+            self.logger.critical('Error loading filter atlasprint : {}'.format(e))
             raise
 
     def create_filter(self) -> AtlasPrintFilter:

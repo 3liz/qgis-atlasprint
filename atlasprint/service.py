@@ -24,8 +24,6 @@ from configparser import ConfigParser
 from typing import Dict
 
 from qgis.core import (
-    Qgis,
-    QgsMessageLog,
     QgsExpression,
     QgsProject,
 )
@@ -37,6 +35,7 @@ from qgis.server import (
 )
 
 from .core import print_layout, AtlasPrintException
+from .logger import Logger
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'
@@ -58,7 +57,7 @@ class AtlasPrintError(Exception):
         super().__init__(msg)
         self.msg = msg
         self.code = code
-        QgsMessageLog.logMessage("Atlas print request error %s: %s" % (code, msg), "atlasprint", Qgis.Critical)
+        Logger().critical("Atlas print request error {}: {}".format(code, msg))
 
     def formatResponse(self, response: QgsServerResponse) -> None:
         """ Format error response
@@ -72,9 +71,10 @@ class AtlasPrintService(QgsService):
 
     def __init__(self, debug: bool = False) -> None:
         super().__init__()
-        self.debugMode = debug
+        _ = debug
         self.metadata = {}
         self.get_plugin_metadata()
+        self.logger = Logger()
 
     def get_plugin_metadata(self):
         """
@@ -128,7 +128,7 @@ class AtlasPrintService(QgsService):
         except AtlasPrintError as err:
             err.formatResponse(response)
         except Exception:
-            QgsMessageLog.logMessage("Unhandled exception:\n%s" % traceback.format_exc(), "atlasprint", Qgis.Critical)
+            self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
             err = AtlasPrintError(500, "Internal 'atlasprint' service error")
             err.formatResponse(response)
 
@@ -192,7 +192,7 @@ class AtlasPrintService(QgsService):
         except AtlasPrintException as e:
             raise AtlasPrintError(400, 'ATLAS - Error from the user while generating the PDF: {}'.format(e))
         except Exception:
-            QgsMessageLog.logMessage("Unhandled exception:\n%s" % traceback.format_exc(), "atlasprint", Qgis.Critical)
+            self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
             raise AtlasPrintError(500, "Internal 'atlasprint' service error")
 
         path = Path(pdf_path)
@@ -206,5 +206,5 @@ class AtlasPrintService(QgsService):
             response.write(path.read_bytes())
             path.unlink()
         except Exception:
-            QgsMessageLog.logMessage("Error occured while reading PDF file", 'atlasprint', Qgis.Critical)
+            self.logger.critical("Error occured while reading PDF file")
             raise
