@@ -33,7 +33,8 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: EXP_FILTER is required'
+    assert b['message'] == (
+        'ATLAS - Error from the user while generating the PDF: EXP_FILTER is mandatory to print an atlas layout')
 
     # Make a failed request with invalid EXP_FILTER (not well formed)
     qs = (
@@ -79,7 +80,7 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout not found'
+    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout `Fakelayout1-atlas` not found'
 
     # Make a failed request with invalid SCALE and SCALES (can not be used together)
     qs = (
@@ -132,7 +133,7 @@ def test_atlas_getprint_failed(client):
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout1-atlas&'
+        'TEMPLATE=layout-no-atlas&'
         'EXP_FILTER=id in (1, 2)&'
         'SCALES=10000,5000'.format(PROJECT_NO_ATLAS))
     rv = client.get(qs, PROJECT_NO_ATLAS)
@@ -140,7 +141,7 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout not found'
+    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout `layout-no-atlas` not found'
 
 
 def test_atlas_getprint_atlas(client):
