@@ -20,7 +20,6 @@
 
 import os
 
-from qgis.core import Qgis
 from qgis.server import QgsServerInterface
 
 from .filter import AtlasPrintFilter
