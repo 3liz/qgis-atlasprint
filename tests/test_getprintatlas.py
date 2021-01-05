@@ -3,18 +3,16 @@ import json
 
 LOGGER = logging.getLogger('server')
 
-__copyright__ = 'Copyright 2019, 3Liz'
+__copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
-__revision__ = '$Format:%H$'
 
 PROJECT_NO_ATLAS = 'france_parts.qgs'
 PROJECT_ATLAS_SIMPLE = 'atlas_simple.qgs'
 
 
-def test_atlas_getprint_failed(client):
-    """Test getcapabilites response."""
-    # Make a failed request no template
+def test_no_template(client):
+    """Test missing template name."""
     qs = '?SERVICE=ATLAS&REQUEST=GetPrint&MAP={}'.format(PROJECT_ATLAS_SIMPLE)
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 400
@@ -23,7 +21,9 @@ def test_atlas_getprint_failed(client):
     assert b['status'] == 'fail'
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: TEMPLATE is required'
 
-    # Make a failed request no EXP_FILTER
+
+def test_no_exp_filter(client):
+    """ Test without EXP_FILTER. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -34,9 +34,12 @@ def test_atlas_getprint_failed(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
     assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: EXP_FILTER is mandatory to print an atlas layout')
+        'ATLAS - Error from the user while generating the PDF: EXP_FILTER is mandatory to print an atlas '
+        'layout')
 
-    # Make a failed request with invalid EXP_FILTER (not well formed)
+
+def test_invalid_exp_filter(client):
+    """ Test with an invalid EXP_FILTER (not well formed). """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -52,7 +55,9 @@ def test_atlas_getprint_failed(client):
         'ATLAS - Error from the user while generating the PDF: Expression is invalid: \n'
         'syntax error, unexpected $end, expecting COMMA or \')\'')
 
-    # Make a failed request with invalid EXP_FILTER (unknown field)
+
+def test_invalid_exp_filter_field(client):
+    """ Test with an invalid EXP_FILTER (unknown field). """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -68,7 +73,9 @@ def test_atlas_getprint_failed(client):
         'ATLAS - Error from the user while generating the PDF: Expression is invalid, eval error: '
         'Column \'fakeId\' not found')
 
-    # Make a failed request with invalid TEMPLATE (unknown layout)
+
+def test_invalid_template(client):
+    """ Make a failed request with invalid TEMPLATE (unknown layout). """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -80,9 +87,12 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout `Fakelayout1-atlas` not found'
+    assert b['message'] == (
+        'ATLAS - Error from the user while generating the PDF: Layout `Fakelayout1-atlas` not found')
 
-    # Make a failed request with invalid SCALE and SCALES (can not be used together)
+
+def test_invalid_scale_and_scales(client):
+    """ Test that SCALE and SCALES can not be used together."""
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -98,7 +108,9 @@ def test_atlas_getprint_failed(client):
     assert b['message'] == (
         'ATLAS - Error from the user while generating the PDF: SCALE and SCALES can not be used together.')
 
-    # Make a failed request with invalid SCALE
+
+def test_invalid_scale(client):
+    """ Make a failed request with invalid SCALE. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -113,7 +125,9 @@ def test_atlas_getprint_failed(client):
     assert b['status'] == 'fail'
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Invalid number in SCALE.'
 
-    # Make a failed request with invalid SCALES
+
+def test_invalid_scales(client):
+    """ Test a failed request with invalid SCALES. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -128,7 +142,9 @@ def test_atlas_getprint_failed(client):
     assert b['status'] == 'fail'
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Invalid number in SCALES.'
 
-    # Make a failed request on a project without atlas layout
+
+def test_invalid_atlas_layout(client):
+    """ Test a failed request on a project without atlas layout. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -141,11 +157,12 @@ def test_atlas_getprint_failed(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Layout `layout-no-atlas` not found'
+    assert b['message'] == (
+        'ATLAS - Error from the user while generating the PDF: Layout `layout-no-atlas` not found')
 
 
-def test_atlas_getprint_atlas(client):
-    """Test Atlas GetPrint response for atlas."""
+def test_valid_getprint_atlas(client):
+    """ Test Atlas GetPrint response for atlas. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -159,8 +176,8 @@ def test_atlas_getprint_atlas(client):
     assert rv.headers.get('Content-Type', '').find('application/pdf') == 0
 
 
-def test_atlas_getprint_report(client):
-    """Test Atlas GetPrint response for report."""
+def test_valid_getprint_report(client):
+    """ Test Atlas GetPrint response for report. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
