@@ -15,7 +15,7 @@ env:
   matrix:
     - QGIS_VERSION=3.4
     - QGIS_VERSION=3.10
-    - QGIS_VERSION=3.14
+    - QGIS_VERSION=3.16
 
 install:
   - mkdir .local
@@ -41,7 +41,7 @@ jobs:
       env: # no environment variables - overwrite with empty to remove matrix
       name: Create release, plugins.qgis.org
       install:
-        - pip3 install qgis-plugin-ci==1.8.3
+        - pip3 install qgis-plugin-ci==1.8.4
       before_deploy:
         - export RELEASE_TITLE=${TRAVIS_TAG:1}
         - qgis-plugin-ci changelog $TRAVIS_TAG > ../release.md
