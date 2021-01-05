@@ -10,7 +10,7 @@ ifdef REGISTRY_URL
 endif
 
 # Qgis version flavor
-FLAVOR:=3.4
+FLAVOR:=3.16
 
 BECOME_USER:=$(shell id -u)
 

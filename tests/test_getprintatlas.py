@@ -1,6 +1,8 @@
 import json
 import logging
 
+from qgis.core import Qgis
+
 LOGGER = logging.getLogger('server')
 
 __copyright__ = 'Copyright 2021, 3Liz'
@@ -69,9 +71,13 @@ def test_invalid_exp_filter_field(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
+    if Qgis.QGIS_VERSION_INT < 31600:
+        field = 'Column'
+    else:
+        field = 'Field'
     assert b['message'] == (
         'ATLAS - Error from the user while generating the PDF: Expression is invalid, eval error: '
-        'Column \'fakeId\' not found')
+        '{} \'fakeId\' not found'.format(field))
 
 
 def test_invalid_template(client):
