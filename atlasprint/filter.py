@@ -16,8 +16,8 @@
 ***************************************************************************
 """
 
-from qgis.server import QgsServerFilter
 from qgis.core import Qgis, QgsMessageLog
+from qgis.server import QgsServerFilter
 
 
 class AtlasPrintFilter(QgsServerFilter):

@@ -5,22 +5,21 @@ import tempfile
 
 from uuid import uuid4
 
-from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge
 from qgis.core import (
     Qgis,
-    QgsMasterLayoutInterface,
-    QgsSettings,
-    QgsLayoutItemLabel,
-    QgsLayoutItemMap,
-    QgsLayoutExporter,
     QgsExpression,
     QgsExpressionContext,
     QgsExpressionContextUtils,
+    QgsLayoutExporter,
+    QgsLayoutItemLabel,
+    QgsLayoutItemMap,
+    QgsMasterLayoutInterface,
+    QgsSettings,
 )
+from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
 from qgis.PyQt.QtCore import QVariant
 
 from .logger import Logger
-
 
 __copyright__ = 'Copyright 2019, 3Liz'
 __license__ = 'GPL version 3'

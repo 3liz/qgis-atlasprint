@@ -16,25 +16,17 @@
 ***************************************************************************
 """
 
-import traceback
 import json
+import traceback
 
-from pathlib import Path
 from configparser import ConfigParser
+from pathlib import Path
 from typing import Dict
 
-from qgis.core import (
-    QgsExpression,
-    QgsProject,
-)
+from qgis.core import QgsExpression, QgsProject
+from qgis.server import QgsServerRequest, QgsServerResponse, QgsService
 
-from qgis.server import (
-    QgsService,
-    QgsServerRequest,
-    QgsServerResponse,
-)
-
-from .core import print_layout, AtlasPrintException
+from .core import AtlasPrintException, print_layout
 from .logger import Logger
 
 __copyright__ = 'Copyright 2019, 3Liz'

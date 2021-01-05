@@ -1,11 +1,12 @@
-import gdal
-import sys
-import os
-import pytest
-import lxml.etree
-import glob
 import configparser
+import glob
 import logging
+import os
+import sys
+
+import gdal
+import lxml.etree
+import pytest
 
 from qgis.PyQt import Qt
 
@@ -17,12 +18,12 @@ LOGGER.setLevel(logging.DEBUG)
 
 from typing import Any, Dict, Generator
 
-from qgis.core import Qgis, QgsApplication, QgsProject,QgsFontUtils
+from qgis.core import Qgis, QgsApplication, QgsFontUtils, QgsProject
 from qgis.server import (
-    QgsServer,
-    QgsServerRequest,
     QgsBufferServerRequest,
     QgsBufferServerResponse,
+    QgsServer,
+    QgsServerRequest,
 )
 
 qgis_application = None

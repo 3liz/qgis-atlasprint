@@ -3,10 +3,7 @@ __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
 __revision__ = '$Format:%H$'
 
-from qgis.core import (
-    QgsMessageLog,
-    Qgis,
-)
+from qgis.core import Qgis, QgsMessageLog
 
 
 class Logger:
