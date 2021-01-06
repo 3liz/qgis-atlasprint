@@ -182,6 +182,20 @@ def test_valid_getprint_atlas(client):
     assert rv.headers.get('Content-Type', '').find('application/pdf') == 0
 
 
+def test_valid_get_print_atlas_accent(client):
+    """ Test Atlas GetPrint with some accents and spaces in the layout name. """
+    qs = (
+        '?SERVICE=ATLAS&'
+        'REQUEST=GetPrint&'
+        'MAP={}&'
+        'TEMPLATE=I\'m a dïfficùlt l@yout NAME&'
+        'EXP_FILTER=id in (1, 2)'.format(PROJECT_ATLAS_SIMPLE))
+    rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
+    assert rv.status_code == 200
+
+    assert rv.headers.get('Content-Type', '') == 'application/pdf'
+
+
 def test_valid_getprint_report(client):
     """ Test Atlas GetPrint response for report. """
     qs = (

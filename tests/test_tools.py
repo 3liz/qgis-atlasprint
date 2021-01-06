@@ -1,18 +1,14 @@
 """Test core functions."""
 
-import json
 
 from qgis.core import QgsVectorLayer
 
-__copyright__ = 'Copyright 2019, 3Liz'
+__copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
-__revision__ = '$Format:%H$'
-
-PROJECT_FILE = 'no_atlas.qgs'
 
 
-def test_global_scales(client):
+def test_global_scales():
     """Test we can fetch global scales from INI file or hardcoded scales."""
     from atlasprint.core import global_scales
 
@@ -23,17 +19,10 @@ def test_global_scales(client):
     assert scales == expected
 
 
-def test_not_supported_request(client):
-    """Test not supported GetCapabilities."""
-    # Make a request
-    qs = '?SERVICE=ATLAS&REQUEST=Get&MAP={}'.format(PROJECT_FILE)
-    rv = client.get(qs, PROJECT_FILE)
-    assert rv.status_code == 400
-
-    assert rv.headers.get('Content-Type', '').find('application/json') == 0
-
-    b = json.loads(rv.content.decode('utf-8'))
-    assert b['status'] == 'fail'
+def test_slugify():
+    """ Test to slugify a string. """
+    from atlasprint.core import clean_string
+    assert clean_string('I\'m Ä safe l@yoùt NÀMÉ') == 'Im_A_safe_lyout_NAME'
 
 
 def test_optimize_filter():

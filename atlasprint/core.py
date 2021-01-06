@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+import unicodedata
 
 from uuid import uuid4
 
@@ -145,7 +146,8 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
 
         expression = QgsExpression(feature_filter)
         if expression.hasParserError():
-            raise AtlasPrintException('Expression is invalid, parser error: {}'.format(expression.parserErrorString()))
+            raise AtlasPrintException('Expression is invalid, parser error: {}'.format(
+                expression.parserErrorString()))
 
         context = QgsExpressionContext()
         context.appendScope(QgsExpressionContextUtils.globalScope())
@@ -155,7 +157,8 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
         context.appendScope(QgsExpressionContextUtils.layerScope(layer))
         expression.prepare(context)
         if expression.hasEvalError():
-            raise AtlasPrintException('Expression is invalid, eval error: {}'.format(expression.evalErrorString()))
+            raise AtlasPrintException('Expression is invalid, eval error: {}'.format(
+                expression.evalErrorString()))
 
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
@@ -208,14 +211,27 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
 
     export_path = os.path.join(
         tempfile.gettempdir(),
-        '{}_{}.pdf'.format(layout_name, uuid4())
+        '{}_{}.pdf'.format(clean_string(layout_name), uuid4())
     )
     result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, export_path, settings)
 
-    if result != QgsLayoutExporter.Success and not os.path.isfile(export_path):
-        raise Exception('export not generated {} ({})'.format(export_path, error))
+    if result != QgsLayoutExporter.Success:
+        raise Exception('Export not generated in QGIS exporter {} : {}'.format(export_path, error))
+
+    if not os.path.isfile(export_path):
+        raise Exception('Export OK from QGIS, but file not found on the file system : {}'.format(export_path))
 
     return export_path
+
+
+def clean_string(input_string) -> str:
+    """ Clean a string to be used as a file name """
+    input_string = "".join([c for c in input_string if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+    nfkd_form = unicodedata.normalize('NFKD', input_string)
+    only_ascii = nfkd_form.encode('ASCII', 'ignore')
+    only_ascii = only_ascii.decode('ASCII')
+    only_ascii = only_ascii.replace(' ', '_')
+    return only_ascii
 
 
 def optimize_expression(layer, expression):
