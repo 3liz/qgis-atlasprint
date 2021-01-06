@@ -9,7 +9,7 @@ __copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
 
-PROJECT_NO_ATLAS = 'france_parts.qgs'
+PROJECT_NO_ATLAS = 'no_atlas.qgs'
 PROJECT_ATLAS_SIMPLE = 'atlas_simple.qgs'
 
 

@@ -9,7 +9,7 @@ __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
 __revision__ = '$Format:%H$'
 
-PROJECT_FILE = 'france_parts.qgs'
+PROJECT_FILE = 'no_atlas.qgs'
 
 
 def test_global_scales(client):
