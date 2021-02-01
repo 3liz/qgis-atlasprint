@@ -132,7 +132,7 @@ tickets:
       --header "PRIVATE-TOKEN:${USER_TOKEN}"
       --data '{
       "id":7,
-      "assignee_ids":[2],
+      "assignee_ids":[77],
       "labels":"SAAS Qgis,release,infra-v2",
       "title":"Nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"'",
       "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/lizmap-plugin/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
