@@ -2,10 +2,9 @@
 
 **QGIS Server plugin to export PDF of atlas layouts and reports.**
 
-[![Build Status](https://api.travis-ci.org/3liz/qgis-atlasprint.svg?branch=master)](https://travis-ci.org/github/3liz/qgis-atlasprint)
-
-
 ![Logo of the plugin](atlasprint/icon.png)
+
+[![Tests 🎳](https://github.com/3liz/qgis-atlasprint/workflows/Tests%20%F0%9F%8E%B3/badge.svg)](https://github.com/3liz/qgis-atlasprint/actions?query=branch%3Amaster)
 
 For more detailed information about installation, usage etc, read in source code folder
  **atlasprint** the [README.md](./atlasprint/README.md).
