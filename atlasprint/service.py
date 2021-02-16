@@ -25,6 +25,7 @@ from typing import Dict
 
 from qgis.core import QgsExpression, QgsProject
 from qgis.server import QgsServerRequest, QgsServerResponse, QgsService
+from qgis.utils import server_active_plugins, pluginMetadata
 
 from .core import AtlasPrintException, print_layout
 from .logger import Logger
@@ -64,20 +65,7 @@ class AtlasPrintService(QgsService):
     def __init__(self, debug: bool = False) -> None:
         super().__init__()
         _ = debug
-        self.metadata = {}
-        self.get_plugin_metadata()
         self.logger = Logger()
-
-    def get_plugin_metadata(self):
-        """
-        Get plugin metadata.
-        """
-        metadata_file = Path(__file__).resolve().parent / 'metadata.txt'
-        if metadata_file.is_file():
-            config = ConfigParser()
-            config.read(str(metadata_file))
-            self.metadata['name'] = config.get('general', 'name')
-            self.metadata['version'] = config.get('general', 'version')
 
     # QgsService inherited
 
@@ -129,9 +117,14 @@ class AtlasPrintService(QgsService):
     def get_capabilities(self, params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
         """ Get atlas capabilities based on metadata file
         """
+        _ = params, project
+        plugin_name = 'atlasprint'
         body = {
             'status': 'success',
-            'metadata': self.metadata
+            'metadata': {
+                'name': plugin_name,
+                'version': pluginMetadata(plugin_name, 'version'),
+            }
         }
         write_json_response(body, response)
         return
