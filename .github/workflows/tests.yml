@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         qgis_version: [
-            "3.4",
             "3.10",
             "3.16",
         ]
