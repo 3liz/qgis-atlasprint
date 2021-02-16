@@ -3,10 +3,14 @@ import glob
 import logging
 import os
 import sys
+import warnings
 
-import gdal
 import lxml.etree
 import pytest
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from osgeo import gdal
 
 from qgis.PyQt import Qt
 
