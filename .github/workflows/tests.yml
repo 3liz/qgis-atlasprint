@@ -71,7 +71,7 @@ jobs:
     needs: [flake8, unittests]
 
     runs-on: ubuntu-latest
-    if: github.repository == 'Gustry/qgis-wfsOutputExtension' && contains(github.ref, 'refs/tags/')
+    if: github.repository == '3liz/qgis-atlasprint' && contains(github.ref, 'refs/tags/')
 
     steps:
     - uses: actions/checkout@v2
