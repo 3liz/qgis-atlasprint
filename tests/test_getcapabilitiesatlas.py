@@ -3,10 +3,9 @@ import logging
 
 LOGGER = logging.getLogger('server')
 
-__copyright__ = 'Copyright 2019, 3Liz'
+__copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
-__revision__ = '$Format:%H$'
 
 PROJECT_FILE = 'no_atlas.qgs'
 
