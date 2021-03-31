@@ -9,7 +9,7 @@ from qgis.core import Qgis, QgsMessageLog
 class Logger:
 
     def __init__(self):
-        self.plugin = 'wfsOutputExtension'
+        self.plugin = 'AtlasPrint'
 
     def info(self, message):
         QgsMessageLog.logMessage(message, self.plugin, Qgis.Info)
