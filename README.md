@@ -4,7 +4,7 @@
 
 ![Logo of the plugin](atlasprint/icon.png)
 
-[![Tests 🎳](https://github.com/3liz/qgis-atlasprint/workflows/Tests%20%F0%9F%8E%B3/badge.svg)](https://github.com/3liz/qgis-atlasprint/actions?query=branch%3Amaster)
+[![Tests 🎳](https://github.com/3liz/qgis-atlasprint/actions/workflows/tests.yml/badge.svg)](https://github.com/3liz/qgis-atlasprint/actions/workflows/tests.yml)
 
 For more detailed information about installation, usage etc, read in source code folder
  **atlasprint** the [README.md](./atlasprint/README.md).
