@@ -46,6 +46,8 @@ nosetests.xml
 build2
 build3
 
+# Python
+.venv/
 .cache
 .local
 __output__
