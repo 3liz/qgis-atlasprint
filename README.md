@@ -1,4 +1,4 @@
-## AtlasPrint
+# AtlasPrint
 
 **QGIS Server plugin to export PDF of atlas layouts and reports.**
 
@@ -9,7 +9,7 @@
 For more detailed information about installation, usage etc, read in source code folder
  **atlasprint** the [README.md](./atlasprint/README.md).
  
-#### Running tests locally
+## Running tests locally
  
  ```bash
 docker pull 3liz/qgis-platform:3.16
