@@ -28,31 +28,25 @@ def test_slugify():
 def test_optimize_filter():
     """Test we can optimize the feature filter if $id."""
     from atlasprint.core import optimize_expression
-    layer = QgsVectorLayer('None?field=primary:integer&field=name:string(20)', 'test', 'memory')
 
     # No primary key
+    layer = QgsVectorLayer('None?field=primary:integer&field=name:string(20)', 'test', 'memory')
+
     assert 'abc' == optimize_expression(layer, 'abc')
     assert '$id=3' == optimize_expression(layer, '$id=3')
     assert "$id in ('1','2')" == optimize_expression(layer, "$id in ('1','2')")
 
     # One primary key
-    def fake_keys():
-        return ['primary']
-    layer.primaryKeyAttributes = fake_keys
+    layer.primaryKeyAttributes = lambda: ['primary']
 
     assert '"primary"=3' == optimize_expression(layer, '$id=3')
     assert '"primary" in (\'1\',\'2\')' == optimize_expression(layer, "$id in ('1','2')")
 
     # Two primary keys
-    def fake_keys():
-        return ['primary', 'name']
-    layer.primaryKeyAttributes = fake_keys
+    layer.primaryKeyAttributes = lambda: ['primary', 'name']
     assert '$id=3' == optimize_expression(layer, '$id=3')
 
-    layer = QgsVectorLayer('None?field=primary:string(20)&field=name:string(20)', 'test', 'memory')
-
     # One primary key but it's not integer
-    def fake_keys():
-        return ['primary']
-    layer.primaryKeyAttributes = fake_keys
+    layer = QgsVectorLayer('None?field=primary:string(20)&field=name:string(20)', 'test', 'memory')
+    layer.primaryKeyAttributes = lambda: ['primary']
     assert '$id=3' == optimize_expression(layer, '$id=3')
