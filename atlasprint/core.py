@@ -18,7 +18,6 @@ from qgis.core import (
     QgsSettings,
 )
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
-from qgis.PyQt.QtCore import QVariant
 
 from .logger import Logger
 
@@ -246,7 +245,7 @@ def optimize_expression(layer, expression):
         return expression
 
     field = layer.fields().at(0)
-    if field.type() != QVariant.Int:
+    if not field.isNumeric():
         return expression
 
     expression = expression.replace('$id', '"{}"'.format(field.name()))

@@ -50,3 +50,8 @@ def test_optimize_filter():
     layer = QgsVectorLayer('None?field=primary:string(20)&field=name:string(20)', 'test', 'memory')
     layer.primaryKeyAttributes = lambda: ['primary']
     assert '$id=3' == optimize_expression(layer, '$id=3')
+
+    # One primary key type double
+    layer = QgsVectorLayer('None?field=primary:double(20,20)&field=name:string(20)', 'test', 'memory')
+    layer.primaryKeyAttributes = lambda: ['primary']
+    assert '"primary"=3' == optimize_expression(layer, '$id=3')
