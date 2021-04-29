@@ -103,3 +103,12 @@ jobs:
         --osgeo-username ${{ secrets.OSGEO_USERNAME }}
         --osgeo-password ${{ secrets.OSGEO_PASSWORD }}
         --create-plugin-repo
+
+    - name: Tweet
+      uses: mugi111/tweet-trigger-release@v1.1
+      with:
+        consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}
+        consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}
+        access_token_key: ${{ secrets.TWITTER_ACCESS_TOKEN_KEY }}
+        access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+        tweet_body: 'New release AtlasPrint ${{ env.RELEASE_VERSION }} for #QGIS Server 🚀 https://github.com/3liz/qgis-atlasprint/releases'
