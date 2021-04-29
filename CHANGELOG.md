@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.2.2 - 2021-04-29
+
+* Fix the feature expression if the primary key is numeric
+* Fix the name of the plugin in the logs
+* Raise the minimum version to 3.10
+* Some code cleanup to follow the QGIS API
+
 ## v3.2.1 - 2021-01-06
 
 * Sanitize filename when exporting to PDF
