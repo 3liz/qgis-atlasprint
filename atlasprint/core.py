@@ -7,7 +7,6 @@ import unicodedata
 from uuid import uuid4
 
 from qgis.core import (
-    Qgis,
     QgsExpression,
     QgsExpressionContext,
     QgsExpressionContextUtils,
@@ -167,29 +166,17 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
 
         if scales:
             atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
-            if Qgis.QGIS_VERSION_INT >= 30900:
-                settings.predefinedMapScales = scales
-            else:
-                atlas_layout.reportContext().setPredefinedScales(scales)
+            settings.predefinedMapScales = scales
 
         if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
-            if Qgis.QGIS_VERSION_INT >= 30900:
-                use_project = project.useProjectScales()
-                map_scales = project.mapScales()
-            else:
-                map_scales = project_scales(project)
-                use_project = len(map_scales) == 0
-
+            use_project = project.useProjectScales()
+            map_scales = project.mapScales()
             if not use_project or len(map_scales) == 0:
                 logger.info(
                     'Map scales not found in project, fetching predefined map scales in global config'
                 )
                 map_scales = global_scales()
-
-            if Qgis.QGIS_VERSION_INT >= 30900:
-                settings.predefinedMapScales = map_scales
-            else:
-                atlas_layout.reportContext().setPredefinedScales(map_scales)
+            settings.predefinedMapScales = map_scales
 
     elif master_layout.layoutType() == QgsMasterLayoutInterface.Report:
         report_layout = master_layout
