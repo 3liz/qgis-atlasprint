@@ -104,6 +104,9 @@ jobs:
         --osgeo-password ${{ secrets.OSGEO_PASSWORD }}
         --create-plugin-repo
 
+    - name: Set env
+      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
     - name: Tweet
       uses: mugi111/tweet-trigger-release@v1.1
       with:
