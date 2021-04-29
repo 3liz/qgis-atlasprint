@@ -53,34 +53,6 @@ def global_scales():
     return scales
 
 
-def project_scales(project):
-    """Read the project settings about project scales.
-
-    It might be an empty list if the checkbox is not checked.
-    Only for QGIS < 3.10.
-
-    :param project: The QGIS project.
-    :type project: QgsProject
-
-    :return: Boolean if we use project scales and list of scales.
-    :rtype: list
-    """
-    scales = []
-
-    use_project = project.readBoolEntry('Scales', '/useProjectScales')
-    if not use_project:
-        return scales
-
-    data = project.readListEntry('Scales', '/ScalesList')
-    for scale in data[0]:
-        item = scale.split(':')
-        if len(item) != 2:
-            continue
-        scales.append(float(item[1]))
-
-    return scales
-
-
 def print_layout(project, layout_name, feature_filter: str = None, scales=None, scale=None, **kwargs):
     """Generate a PDF for an atlas or a report.
 
