@@ -123,7 +123,7 @@ tickets:
       "assignee_ids":[77],
       "labels":"qgis server",
       "title":"Nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"'",
-      "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/lizmap-plugin/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
+      "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/qgis-atlasprint/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
       --request POST https://projects.3liz.org/api/v4/projects/70/issues
     # Infra-doc
     - >
@@ -135,7 +135,7 @@ tickets:
       "assignee_ids":[77],
       "labels":"SAAS Qgis,release,infra-v2",
       "title":"Nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"'",
-      "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/lizmap-plugin/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
+      "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/qgis-atlasprint/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
       --request POST https://projects.3liz.org/api/v4/projects/7/issues
     - >
       curl
@@ -146,5 +146,5 @@ tickets:
       "assignee_ids":[5],
       "labels":"SAAS Qgis,release,infra-v3",
       "title":"Nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"'",
-      "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/lizmap-plugin/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
+      "description":"Il existe une nouvelle version '"${FACTORY_PRODUCT_NAME}"' : '"${CI_COMMIT_REF_NAME}"' 👍\n Lien vers la pipeline https://projects.3liz.org/lizmap/qgis-atlasprint/pipelines/'"${CI_PIPELINE_ID}"' \n"}'
       --request POST https://projects.3liz.org/api/v4/projects/7/issues
