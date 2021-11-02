@@ -17,6 +17,7 @@ jobs:
         qgis_version: [
             "3.10",
             "3.16",
+            "3.22",
         ]
 
     steps:
