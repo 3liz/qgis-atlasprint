@@ -30,6 +30,9 @@ This plugin adds some new requests with the `ATLAS` service:
   * `SCALES`: *optional*. If not provided, the default configuration in the atlas is used.
     * Comma separated list of values. If set, these predefined scales are used. Exclusive with `SCALE`.
     * For instance `SCALES=400,1000`.
+  * `FORMAT`: PDF is by default.
+    * Possible values from https://docs.qgis.org/latest/en/docs/server_manual/services.html#wms-getprint-format
+    * SVG is not available.
   * Arbitrary key value pairs to manipulate item label text in composition. The key is the id (lower case) of the label text component and the value is the content that will override it default content. Example `&title=Municipality%20of%20Paris` will look for a label text item in the layout called `title` and will replace it with `Municipality of Paris`.
 
 The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.

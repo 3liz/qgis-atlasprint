@@ -26,7 +26,7 @@ from qgis.core import QgsExpression, QgsProject
 from qgis.server import QgsServerRequest, QgsServerResponse, QgsService
 from qgis.utils import pluginMetadata
 
-from .core import AtlasPrintException, print_layout
+from .core import AtlasPrintException, parse_output_format, print_layout
 from .logger import Logger
 
 __copyright__ = 'Copyright 2021, 3Liz'
@@ -135,6 +135,7 @@ class AtlasPrintService(QgsService):
         feature_filter = params.get('EXP_FILTER', None)
         scale = params.get('SCALE')
         scales = params.get('SCALES')
+        output_format = parse_output_format(params.get('FORMAT', params.get('format')))
 
         try:
             if not template:
@@ -161,12 +162,13 @@ class AtlasPrintService(QgsService):
                     raise AtlasPrintException('Invalid number in SCALES.')
 
             additional_params = {
-                k: v for k, v in params.items() if k not in ['TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES']
+                k: v for k, v in params.items() if k not in ('TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES', 'FORMAT')
             }
 
-            pdf_path = print_layout(
+            output_path = print_layout(
                 project=project,
                 layout_name=params['TEMPLATE'],
+                output_format=output_format,
                 scale=scale,
                 scales=scales,
                 feature_filter=feature_filter,
@@ -178,16 +180,16 @@ class AtlasPrintService(QgsService):
             self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
             raise AtlasPrintError(500, "Internal 'atlasprint' service error")
 
-        path = Path(pdf_path)
+        path = Path(output_path)
         if not path.exists():
-            raise AtlasPrintError(404, "ATLAS PDF not found")
+            raise AtlasPrintError(404, "ATLAS {} not found".format(output_format.name))
 
         # Send PDF
-        response.setHeader('Content-Type', 'application/pdf')
+        response.setHeader('Content-Type', output_format.value)
         response.setStatusCode(200)
         try:
             response.write(path.read_bytes())
             path.unlink()
         except Exception:
-            self.logger.critical("Error occured while reading PDF file")
+            self.logger.critical("Error occurred while reading {} file".format(output_format.name))
             raise

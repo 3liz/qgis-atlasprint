@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Add `FORMAT` option in the GET request to export as JPEG, PDF, PNG or SVG.
+  Values are from the QGIS Server documentation : https://docs.qgis.org/latest/en/docs/server_manual/services.html#wms-getprint-format
+
 ## v3.2.2 - 2021-04-29
 
 * Fix the feature expression if the primary key is numeric

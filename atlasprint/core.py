@@ -4,6 +4,8 @@ import os
 import tempfile
 import unicodedata
 
+from enum import Enum
+from typing import Union
 from uuid import uuid4
 
 from qgis.core import (
@@ -14,6 +16,7 @@ from qgis.core import (
     QgsLayoutItemLabel,
     QgsLayoutItemMap,
     QgsMasterLayoutInterface,
+    QgsProject,
     QgsSettings,
 )
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
@@ -23,6 +26,13 @@ from .logger import Logger
 __copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
+
+
+class OutputFormat(Enum):
+    Pdf = 'application/pdf'
+    Png = 'image/png'
+    Jpeg = 'image/jpeg'
+    Svg = 'image/svg'
 
 
 class AtlasPrintException(Exception):
@@ -53,7 +63,14 @@ def global_scales():
     return scales
 
 
-def print_layout(project, layout_name, feature_filter: str = None, scales=None, scale=None, **kwargs):
+def print_layout(
+    project: QgsProject,
+    layout_name: str,
+    output_format: OutputFormat,
+    feature_filter: str = None,
+    scales: list = None,
+    scale: int = None,
+    **kwargs):
     """Generate a PDF for an atlas or a report.
 
     :param project: The QGIS project.
@@ -74,6 +91,8 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
     Default to None.
     :type scales: list
 
+    :param output_format: The output format, default to PDF if not provided.
+
     :return: Path to the PDF.
     :rtype: basestring
     """
@@ -85,7 +104,14 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
     bridge.setCanvasLayers()
     manager = project.layoutManager()
     master_layout = manager.layoutByName(layout_name)
-    settings = QgsLayoutExporter.PdfExportSettings()
+
+    if output_format == OutputFormat.Svg:
+        settings = QgsLayoutExporter.SvgExportSettings()
+    elif output_format in (OutputFormat.Png, OutputFormat.Jpeg):
+        settings = QgsLayoutExporter.ImageExportSettings()
+    else:
+        # PDF by default
+        settings = QgsLayoutExporter.PdfExportSettings()
 
     atlas = None
     atlas_layout = None
@@ -164,13 +190,30 @@ def print_layout(project, layout_name, feature_filter: str = None, scales=None, 
                 item.setText(value)
                 found = True
         logger.info(
-            'Additional parameters: {} found in layout {}, value {}'.format(key, found, value))
+            'Additional parameters "{key}" {found} in layout, value "{value}"'.format(
+                key=key,
+                found='found' if found else 'not found',
+                value=value
+            )
+        )
 
     export_path = os.path.join(
         tempfile.gettempdir(),
-        '{}_{}.pdf'.format(clean_string(layout_name), uuid4())
+        '{}_{}.{}'.format(clean_string(layout_name), uuid4(), output_format.name.lower())
     )
-    result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, export_path, settings)
+
+    error = None
+    if output_format in (OutputFormat.Png, OutputFormat.Jpeg, OutputFormat.Svg):
+        exporter = QgsLayoutExporter(atlas_layout or report_layout)
+        if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
+            result = exporter.exportToImage(export_path, settings)
+            error = str(result)
+        else:
+            result = exporter.exportToSvg(export_path, settings)
+    else:
+        # Default to PDF
+        result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, export_path, settings)
+        error = str(result)
 
     if result != QgsLayoutExporter.Success:
         raise Exception('Export not generated in QGIS exporter {} : {}'.format(export_path, error))
@@ -189,6 +232,36 @@ def clean_string(input_string) -> str:
     only_ascii = only_ascii.decode('ASCII')
     only_ascii = only_ascii.replace(' ', '_')
     return only_ascii
+
+
+def parse_output_format(output: Union[str, None]) -> OutputFormat:
+    """ Read the MIME type as string to return the correct format. """
+    # The list is from QGIS server documentation :
+    # https://docs.qgis.org/3.16/en/docs/server_manual/services.html#wms-getprint-format
+    if output is None:
+        return OutputFormat.Pdf
+
+    output = output.lower()
+
+    if output == '':
+        return OutputFormat.Pdf
+
+    elif output in ('pdf', 'application/pdf'):
+        return OutputFormat.Pdf
+
+    elif output in ('image/png', 'png'):
+        return OutputFormat.Png
+
+    elif output in ('image/jpeg', 'jpeg', 'jpg'):
+        return OutputFormat.Jpeg
+
+    elif output in ('svg', 'image/svg', 'image/svg+xml'):
+        Logger().info('SVG is not well supported. Default to PDF')
+        return OutputFormat.Pdf
+
+    # Default value
+    Logger().info('Output format is invalid, default to PDF. It was "{}"'.format(output))
+    return OutputFormat.Pdf
 
 
 def optimize_expression(layer, expression):
