@@ -1,0 +1,22 @@
+version: 2
+updates:
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    assignees:
+      - "Gustry"
+    ignore:
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-patch" ]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    assignees:
+      - "Gustry"
+    ignore:
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-patch" ]
