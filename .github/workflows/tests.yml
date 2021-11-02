@@ -90,7 +90,7 @@ jobs:
 
     - name: Create release on GitHub
       id: create_release
-      uses: ncipollo/release-action@v1.7.3
+      uses: ncipollo/release-action@v1.8.10
       with:
         bodyFile: release.md
         token: ${{ secrets.BOT_HUB_TOKEN }}
