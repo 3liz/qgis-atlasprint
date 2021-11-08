@@ -41,11 +41,11 @@ def classFactory(iface):
     return Nothing(iface)
 
 
-def serverClassFactory(serverIface):  # pylint: disable=invalid-name
+def serverClassFactory(server_iface):
     """Load atlasprint class from file atlasprint.
 
-    :param serverIface: A QGIS Server interface instance.
-    :type serverIface: QgsServerInterface
+    :param server_iface: A QGIS Server interface instance.
+    :type server_iface: QgsServerInterface
     """
     from .server import AtlasPrintServer
-    return AtlasPrintServer(serverIface)
+    return AtlasPrintServer(server_iface)

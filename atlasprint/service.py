@@ -77,6 +77,7 @@ class AtlasPrintService(QgsService):
         """
         return "1.0.0"
 
+    # noinspection PyMethodMayBeStatic
     def allowMethod(self, method: QgsServerRequest.Method) -> bool:
         """ Check supported HTTP methods
         """
@@ -92,16 +93,18 @@ class AtlasPrintService(QgsService):
 
         # noinspection PyBroadException
         try:
-            reqparam = params.get('REQUEST', '').lower()
+            request_param = params.get('REQUEST', '').lower()
 
-            if reqparam == 'getcapabilities':
+            if request_param == 'getcapabilities':
                 self.get_capabilities(params, response, project)
-            elif reqparam == 'getprint':
+            elif request_param == 'getprint':
                 self.get_print(params, response, project)
             else:
                 raise AtlasPrintError(
                     400,
-                    "Invalid REQUEST parameter: must be one of GetCapabilities, GetPrint, found '{}'".format(reqparam))
+                    "Invalid REQUEST parameter: must be one of GetCapabilities, GetPrint, found '{}'".format(
+                        request_param
+                    ))
 
         except AtlasPrintError as err:
             err.formatResponse(response)
@@ -110,9 +113,8 @@ class AtlasPrintService(QgsService):
             err = AtlasPrintError(500, "Internal 'atlasprint' service error")
             err.formatResponse(response)
 
-    # Atlas Service request methods
-
-    def get_capabilities(self, params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
+    @staticmethod
+    def get_capabilities(params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
         """ Get atlas capabilities based on metadata file
         """
         _ = params, project
@@ -144,7 +146,8 @@ class AtlasPrintService(QgsService):
             if feature_filter:
                 expression = QgsExpression(feature_filter)
                 if expression.hasParserError():
-                    raise AtlasPrintException('Expression is invalid: {}'.format(expression.parserErrorString()))
+                    raise AtlasPrintException(
+                        'Expression is invalid: {}'.format(expression.parserErrorString()))
 
             if scale and scales:
                 raise AtlasPrintException('SCALE and SCALES can not be used together.')
@@ -162,7 +165,8 @@ class AtlasPrintService(QgsService):
                     raise AtlasPrintException('Invalid number in SCALES.')
 
             additional_params = {
-                k: v for k, v in params.items() if k not in ('TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES', 'FORMAT')
+                k: v for k, v in params.items() if k not in (
+                    'TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES', 'FORMAT', 'MAP', 'REQUEST', 'SERVICE')
             }
 
             output_path = print_layout(

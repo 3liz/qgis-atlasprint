@@ -1,10 +1,10 @@
 """Core functions, outside of the QGIS Server context for printing atlas."""
 
-import os
 import tempfile
 import unicodedata
 
 from enum import Enum
+from pathlib import Path
 from typing import Union
 from uuid import uuid4
 
@@ -70,7 +70,8 @@ def print_layout(
     feature_filter: str = None,
     scales: list = None,
     scale: int = None,
-    **kwargs):
+    **kwargs
+):
     """Generate a PDF for an atlas or a report.
 
     :param project: The QGIS project.
@@ -197,31 +198,61 @@ def print_layout(
             )
         )
 
-    export_path = os.path.join(
-        tempfile.gettempdir(),
-        '{}_{}.{}'.format(clean_string(layout_name), uuid4(), output_format.name.lower())
-    )
+    file_name = '{}_{}.{}'.format(clean_string(layout_name), uuid4(), output_format.name.lower())
+    export_path = Path(tempfile.gettempdir()).joinpath(file_name)
 
-    error = None
-    if output_format in (OutputFormat.Png, OutputFormat.Jpeg, OutputFormat.Svg):
+    Logger().info("Exporting the request in {} using {}".format(export_path, output_format.value))
+
+    if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
         exporter = QgsLayoutExporter(atlas_layout or report_layout)
-        if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
-            result = exporter.exportToImage(export_path, settings)
-            error = str(result)
-        else:
-            result = exporter.exportToSvg(export_path, settings)
+        result = exporter.exportToImage(str(export_path), settings)
+        error = result_message(result)
+    elif output_format in (OutputFormat.Svg, ):
+        exporter = QgsLayoutExporter(atlas_layout or report_layout)
+        result = exporter.exportToSvg(str(export_path), settings)
+        error = result_message(result)
     else:
         # Default to PDF
-        result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, export_path, settings)
-        error = str(result)
+        result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
+        # Let's override error message
+        _ = error
+        error = result_message(result)
 
     if result != QgsLayoutExporter.Success:
         raise Exception('Export not generated in QGIS exporter {} : {}'.format(export_path, error))
 
-    if not os.path.isfile(export_path):
+    if not export_path.is_file():
+        logger.warning(
+            "No error from QGIS Exporter, but the file does not exist.\n"
+            "Message from QGIS exporter : {}\n"
+            "File path : {}\n".format(error, export_path))
         raise Exception('Export OK from QGIS, but file not found on the file system : {}'.format(export_path))
 
     return export_path
+
+
+def result_message(error) -> str:
+    """ Error message according to the enumeration. """
+    if error == QgsLayoutExporter.Success:
+        return 'Success'
+    elif error == QgsLayoutExporter.Canceled:
+        return 'Canceled'
+    elif error == QgsLayoutExporter.MemoryError:
+        return 'Memory error'
+    elif error == QgsLayoutExporter.FileError:
+        return 'File error'
+    elif error == QgsLayoutExporter.PrintError:
+        return 'Print error'
+    elif error == QgsLayoutExporter.SvgLayerError:
+        return 'SVG layer error'
+    elif error == QgsLayoutExporter.IteratorError:
+        return 'Iterator error'
+    else:
+        Logger().critical(
+            "Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : "
+            "{}".format(error)
+        )
+        return 'Unknown error'
 
 
 def clean_string(input_string) -> str:
@@ -269,18 +300,22 @@ def optimize_expression(layer, expression):
 
     https://github.com/3liz/qgis-atlasprint/issues/23
     """
+    logger = Logger()
     if expression.find('$id') < 0:
+        logger.info("'$id' not found in the expression, returning the input expression.")
         return expression
 
     primary_keys = layer.primaryKeyAttributes()
     if len(primary_keys) != 1:
+        logger.info("Primary keys are not defined in the layer '{}'.".format(layer.id()))
         return expression
 
     field = layer.fields().at(0)
     if not field.isNumeric():
+        logger.info("The field '{}' is not numeric in layer '{}'.".format(field.name(), layer.id()))
         return expression
 
     expression = expression.replace('$id', '"{}"'.format(field.name()))
-    Logger().info('$id has been replaced by "{}"'.format(field.name()))
+    logger.info('$id has been replaced by "{}" in layer "{}"'.format(field.name(), layer.id()))
 
     return expression

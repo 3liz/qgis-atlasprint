@@ -18,13 +18,12 @@
  ***************************************************************************/
 """
 
-import os
-
 from qgis.server import QgsServerInterface
 
-from .filter import AtlasPrintFilter
-from .logger import Logger
-from .service import AtlasPrintService
+from atlasprint.filter import AtlasPrintFilter
+from atlasprint.logger import Logger
+from atlasprint.service import AtlasPrintService
+from atlasprint.tools import version
 
 __copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
@@ -35,38 +34,22 @@ class AtlasPrintServer:
     """Plugin for QGIS server
     this plugin loads atlasprint filter"""
 
-    def __init__(self, serverIface: 'QgsServerInterface') -> None:
-        self.server_iface = serverIface
+    def __init__(self, server_iface: QgsServerInterface) -> None:
+        self.server_iface = server_iface
         self.logger = Logger()
-        self.logger.info('SUCCESS - init')
-
-        # debug
-        debug = os.getenv('QGIS_SERVER_PRINTATLAS_DEBUG', '').lower() in ('1', 'yes', 'y', 'true')
+        self.logger.info('Init server version "{}"'.format(version()))
 
         # Register service
         try:
-            reg = serverIface.serviceRegistry()
-            reg.registerService(AtlasPrintService(debug=debug))
+            reg = server_iface.serviceRegistry()
+            reg.registerService(AtlasPrintService())
         except Exception as e:
             self.logger.critical('Error loading filter atlasprint : {}'.format(e))
             raise
 
         # Add filter
         try:
-            serverIface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
+            server_iface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
         except Exception as e:
             self.logger.critical('Error loading filter atlasprint : {}'.format(e))
             raise
-
-    def create_filter(self) -> AtlasPrintFilter:
-        """Create a new filter instance - Used for tests
-        """
-        from .filter import AtlasPrintFilter
-        return AtlasPrintFilter(self.server_iface)
-
-    def createService(self, debug: bool = False) -> AtlasPrintService:
-        """ Create  a new service instance
-
-            Used for testing
-        """
-        return AtlasPrintService(debug=debug)

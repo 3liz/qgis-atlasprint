@@ -16,19 +16,19 @@
 ***************************************************************************
 """
 
-from qgis.core import Qgis, QgsMessageLog
 from qgis.server import QgsServerFilter
+
+from atlasprint.logger import Logger
 
 
 class AtlasPrintFilter(QgsServerFilter):
 
     def __init__(self, server_iface):
-        QgsMessageLog.logMessage('atlasprintFilter.init', 'atlasprint', Qgis.Info)
         super(AtlasPrintFilter, self).__init__(server_iface)
 
+        self.logger = Logger()
+        self.logger.info('Init print filter')
         self.server_iface = server_iface
-
-        # QgsMessageLog.logMessage("atlasprintFilter end init", 'atlasprint', Qgis.Info)
 
     def requestReady(self):
         handler = self.server_iface.requestHandler()
@@ -41,8 +41,10 @@ class AtlasPrintFilter(QgsServerFilter):
         if service.lower() != 'wms':
             return
 
-        # Check request to change atlas one
-        if 'REQUEST' not in params or params['REQUEST'].lower() not in ['getprintatlas', 'getcapabilitiesatlas']:
+        if 'REQUEST' not in params:
+            return
+
+        if params['REQUEST'].lower() not in ('getprintatlas', 'getcapabilitiesatlas'):
             return
 
         request = params['REQUEST'].lower()

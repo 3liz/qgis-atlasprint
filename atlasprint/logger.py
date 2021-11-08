@@ -13,5 +13,8 @@ class Logger:
     def info(self, message):
         QgsMessageLog.logMessage(message, self.plugin, Qgis.Info)
 
+    def warning(self, message):
+        QgsMessageLog.logMessage(message, self.plugin, Qgis.Warning)
+
     def critical(self, message):
         QgsMessageLog.logMessage(message, self.plugin, Qgis.Critical)
