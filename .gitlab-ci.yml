@@ -18,7 +18,7 @@ check_tag:
   tags:
     - fabric
   script:
-    - export TAG_NAME=${CI_COMMIT_REF_NAME:1}
+    - export TAG_NAME=${CI_COMMIT_REF_NAME}
     - .lizcloud/check_tag.sh ${TAG_NAME}
 
 test:ltr:

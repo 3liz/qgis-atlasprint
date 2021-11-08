@@ -7,6 +7,7 @@
 * Display the version number in the logs when starting the plugin
 * Set file permission to 744 in the ZIP by default
 * Some code refactoring and cleaning
+* Remove the `v` prefix in a git tag
 
 ## v3.2.2 - 2021-04-29
 
