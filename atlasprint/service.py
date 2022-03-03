@@ -28,6 +28,7 @@ from qgis.utils import pluginMetadata
 
 from .core import AtlasPrintException, parse_output_format, print_layout
 from .logger import Logger
+from .tools import get_lizmap_groups, get_lizmap_user_login
 
 __copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
@@ -98,6 +99,17 @@ class AtlasPrintService(QgsService):
             if request_param == 'getcapabilities':
                 self.get_capabilities(params, response, project)
             elif request_param == 'getprint':
+
+                # Set current Lizmap user and groups in the project before printing
+                headers = request.headers()
+                lizmap_user = get_lizmap_user_login(params, headers)
+                lizmap_group = get_lizmap_groups(params, headers)
+                custom_var = project.customVariables()
+                if custom_var.get('lizmap_user', None) != lizmap_user:
+                    custom_var['lizmap_user'] = lizmap_user
+                    custom_var['lizmap_user_groups'] = list(lizmap_group)  # QGIS can't store a tuple
+                    project.setCustomVariables(custom_var)
+
                 self.get_print(params, response, project)
             else:
                 raise AtlasPrintError(
@@ -112,6 +124,12 @@ class AtlasPrintService(QgsService):
             self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
             err = AtlasPrintError(500, "Internal 'atlasprint' service error")
             err.formatResponse(response)
+        finally:
+            # Remove previous login
+            custom_var = project.customVariables()
+            custom_var.pop('lizmap_user', None)
+            custom_var.pop('lizmap_user_groups', None)
+            project.setCustomVariables(custom_var)
 
     @staticmethod
     def get_capabilities(params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
