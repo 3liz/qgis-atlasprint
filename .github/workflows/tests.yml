@@ -74,39 +74,34 @@ jobs:
     if: github.repository == '3liz/qgis-atlasprint' && contains(github.ref, 'refs/tags/')
 
     steps:
+    - name: Set env
+      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
     - uses: actions/checkout@v2
 
-    - name: Set up Python 3.8
+    - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: "3.10"
 
-    - name: Install qgis-plugin-ci
-      run: pip3 install qgis-plugin-ci==1.8.4
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('.github/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
-    - name : Fetch current changelog
-      run: |
-        qgis-plugin-ci changelog ${GITHUB_REF/refs\/tags\//} >> release.md
-        cat release.md
+    - name: Install Python requirements
+      run: pip install -r .github/requirements.txt
+
+    - name : Get current changelog
+      run: qgis-plugin-ci changelog ${{ env.RELEASE_VERSION }} >> release.md
 
     - name: Create release on GitHub
-      id: create_release
       uses: ncipollo/release-action@v1.9.0
       with:
         bodyFile: release.md
         token: ${{ secrets.BOT_HUB_TOKEN }}
-
-    - name: Package the plugin and deploy it in the release
-      run: >-
-        qgis-plugin-ci
-        release ${GITHUB_REF/refs\/tags\//}
-        --github-token ${{ secrets.BOT_HUB_TOKEN }}
-        --osgeo-username ${{ secrets.OSGEO_USERNAME }}
-        --osgeo-password ${{ secrets.OSGEO_PASSWORD }}
-        --create-plugin-repo
-
-    - name: Set env
-      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
     - name: Tweet
       uses: mugi111/tweet-trigger-release@v1.2
@@ -116,3 +111,20 @@ jobs:
         access_token_key: ${{ secrets.TWITTER_ACCESS_TOKEN_KEY }}
         access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
         tweet_body: 'New release AtlasPrint ${{ env.RELEASE_VERSION }} for #QGIS Server 🚀 https://github.com/3liz/qgis-atlasprint/releases'
+
+    - name: Package the plugin and deploy it in the release
+      run: >-
+        qgis-plugin-ci
+        release ${{ env.RELEASE_VERSION }}
+        --github-token ${{ secrets.BOT_HUB_TOKEN }}
+        --osgeo-username ${{ secrets.OSGEO_USERNAME }}
+        --osgeo-password ${{ secrets.OSGEO_PASSWORD }}
+        --create-plugin-repo
+
+    - name: Repository Dispatch
+      uses: peter-evans/repository-dispatch@v1
+      with:
+        token: ${{ secrets.BOT_HUB_TOKEN }}
+        repository: 3liz/3liz.github.io
+        event-type: merge-plugins
+        client-payload: '{"name": "atlasprint", "version": "${{ env.RELEASE_VERSION }}", "url": "https://github.com/3liz/qgis-atlasprint/releases/latest/download/plugins.xml"}'
