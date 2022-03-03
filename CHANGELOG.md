@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-* Add support for `@lizmap_user` and `@lizmap_groups` for current logged users in Lizmap Web Client
+## 3.3.0 - 2022-03-03
+
+* Add expression for `@lizmap_user` and `@lizmap_user_groups` related to the current logged user in Lizmap Web Client
 * Add `FORMAT` option in the GET request to export as JPEG, PDF, PNG or SVG.
   Values are from the QGIS Server documentation : https://docs.qgis.org/latest/en/docs/server_manual/services.html#wms-getprint-format
 * Display the version number in the logs when starting the plugin
