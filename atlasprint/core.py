@@ -70,7 +70,7 @@ def print_layout(
     feature_filter: str = None,
     scales: list = None,
     scale: int = None,
-    **kwargs
+    **additional_params
 ):
     """Generate a PDF for an atlas or a report.
 
@@ -183,20 +183,21 @@ def print_layout(
     else:
         raise AtlasPrintException('The layout is not supported by the plugin')
 
-    for key, value in kwargs.items():
-        found = False
-        if atlas_layout:
+    if atlas_layout:
+        Logger().info("Checking for additional parameters to set in the layout before printing…")
+        for key, value in additional_params.items():
+            found = False
             item = atlas_layout.itemById(key.lower())
             if isinstance(item, QgsLayoutItemLabel):
                 item.setText(value)
-                found = True
-        logger.info(
-            'Additional parameters "{key}" {found} in layout, value "{value}"'.format(
-                key=key,
-                found='found' if found else 'not found',
-                value=value
-            )
-        )
+                logger.info(
+                    'Additional parameter "{key}" found in the layout, setting the value to "{value}"'.format(
+                        key=key.lower(), value=value))
+            if not found:
+                logger.info(
+                    'Additional parameter "{key}" has not been found in the layout, the value was "{value}", '
+                    'skipping'.format(key=key.lower(), value=value))
+        Logger().info("End of additional parameters")
 
     file_name = '{}_{}.{}'.format(clean_string(layout_name), uuid4(), output_format.name.lower())
     export_path = Path(tempfile.gettempdir()).joinpath(file_name)

@@ -33,18 +33,28 @@ This plugin adds some new requests with the `ATLAS` service:
   * `FORMAT`: PDF is by default.
     * Possible values from https://docs.qgis.org/latest/en/docs/server_manual/services.html#wms-getprint-format
     * SVG is not available.
-  * Arbitrary key value pairs to manipulate item label text in composition. The key is the id (lower case) of the label text component and the value is the content that will override it default content. Example `&title=Municipality%20of%20Paris` will look for a label text item in the layout called `title` and will replace it with `Municipality of Paris`.
-
-The only config that the plugin will not follow is the file pattern defined in QGIS Desktop, if it outputs many PDF.
+  * Arbitrary key value pairs to manipulate item label text in composition. [Read below](#text-replacement).
 
 This plugin also adds some new requests to the `WMS` service for backward compatibility:
+
 * `REQUEST=GETCAPABILITIESATLAS` for `ATLAS` `GETCAPABILITIES`
 * `REQUEST=GETPRINTATLAS` for `ATLAS` `GETPRINT`
+
+#### Text replacement
+
+In the URL, it's possible to give additional key value pairs.
+The key is the id (lower case) of the label text component and the value is the content that will override it default content.
+Example `&title=Municipality%20of%20Paris` will look for a label text item in the layout called `title` and will replace it with `Municipality of Paris`.
+
+*Hack*, it's possible to use label `lizmap_user` instead of the `@lizmap_user` variable with a label ID `lizmap_user`.
 
 ### Installation with QGIS server
 
 We assume you have a fully functional QGIS Server with Xvfb.
-See [the QGIS3 documentation](https://docs.qgis.org/3.4/en/docs/user_manual/working_with_ogc/server/index.html).
+See [the QGIS documentation](https://docs.qgis.org/latest/en/docs/server_manual/index.html).
+
+We recommend to use [QGIS-Plugin-Manager](https://github.com/3liz/qgis-plugin-manager/blob/master/README.md) for managing
+plugins with a CLI tool.
 
 We need to download the plugin, and tell QGIS Server where the plugins are
 stored, then reload the web server.

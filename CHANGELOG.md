@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Improve logs about additional parameters and current login
+
 ## 3.3.0 - 2022-03-03
 
 * Add expression for `@lizmap_user` and `@lizmap_user_groups` related to the current logged user in Lizmap Web Client

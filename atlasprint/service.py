@@ -106,11 +106,12 @@ class AtlasPrintService(QgsService):
                 lizmap_group = get_lizmap_groups(params, headers)
                 custom_var = project.customVariables()
                 if custom_var.get('lizmap_user', None) != lizmap_user:
+                    self.logger.info("Adding user and group variables in the QGIS project")
                     custom_var['lizmap_user'] = lizmap_user
                     custom_var['lizmap_user_groups'] = list(lizmap_group)  # QGIS can't store a tuple
                     project.setCustomVariables(custom_var)
 
-                self.get_print(params, response, project)
+                self.get_print(params, response, project, lizmap_user, lizmap_group)
             else:
                 raise AtlasPrintError(
                     400,
@@ -126,6 +127,7 @@ class AtlasPrintService(QgsService):
             err.formatResponse(response)
         finally:
             # Remove previous login
+            self.logger.info("Removing user and group variables from the QGIS project")
             custom_var = project.customVariables()
             custom_var.pop('lizmap_user', None)
             custom_var.pop('lizmap_user_groups', None)
@@ -147,7 +149,14 @@ class AtlasPrintService(QgsService):
         write_json_response(body, response)
         return
 
-    def get_print(self, params: Dict[str, str], response: QgsServerResponse, project: QgsProject) -> None:
+    def get_print(
+            self,
+            params: Dict[str, str],
+            response: QgsServerResponse,
+            project: QgsProject,
+            lizmap_user: str,
+            lizmap_user_group: tuple
+    ) -> None:
         """ Get print document
         """
 
@@ -183,9 +192,17 @@ class AtlasPrintService(QgsService):
                     raise AtlasPrintException('Invalid number in SCALES.')
 
             additional_params = {
-                k: v for k, v in params.items() if k not in (
-                    'TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES', 'FORMAT', 'MAP', 'REQUEST', 'SERVICE')
+                k: v for k, v in params.items() if k.upper() not in (
+                    'TEMPLATE', 'EXP_FILTER', 'SCALE', 'SCALES', 'FORMAT', 'MAP', 'REQUEST', 'SERVICE',
+                    'DPI', 'EXCEPTIONS', 'LAYER', 'LIZMAP_OVERRIDE_FILTER', 'TRANSPARENT', 'VERSION',
+                    'LIZMAP_USER', 'LIZMAP_USER_GROUPS',  # See below for these two
+                )
             }
+
+            if lizmap_user:
+                # Only if the user is connected
+                additional_params['lizmap_user'] = lizmap_user
+                additional_params['lizmap_user_groups'] = ','.join(lizmap_user_group)
 
             output_path = print_layout(
                 project=project,
