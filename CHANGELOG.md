@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 3.3.1 - 2022-03-04
+
 * Improve logs about additional parameters and current login
 
 ## 3.3.0 - 2022-03-03
