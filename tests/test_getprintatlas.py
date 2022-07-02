@@ -53,9 +53,13 @@ def test_invalid_exp_filter(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
+    if Qgis.QGIS_VERSION_INT >= 32200:
+        expected = 'unexpected end of file'
+    else:
+        expected = 'unexpected $end'
     assert b['message'] == (
         'ATLAS - Error from the user while generating the PDF: Expression is invalid: \n'
-        'syntax error, unexpected $end, expecting COMMA or \')\'')
+        'syntax error, {}, expecting COMMA or \')\''.format(expected))
 
 
 def test_invalid_exp_filter_field(client):
