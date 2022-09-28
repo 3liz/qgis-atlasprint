@@ -2,7 +2,6 @@
 name=atlasprint
 qgisMinimumVersion=3.10
 description=Add atlas capabilities for getPrint request in WMS for QGIS Server
-version=3.3.1
 author=3Liz
 email=info@3liz.com
 server=True
@@ -13,7 +12,14 @@ tracker=https://github.com/3liz/qgis-atlasprint/issues
 repository=https://github.com/3liz/qgis-atlasprint
 homepage=https://github.com/3liz/qgis-atlasprint
 
-changelog=changelog
+# Done by qgis-plugin-ci, but still need manual editing
+version=3.3.1
+# Done auto by qgis-plugin-ci
+commitNumber=
+commitSha1=
+dateTime=
+changelog=
+# End of qgis-plugin-ci
 
 tags=server,print,atlas
 
