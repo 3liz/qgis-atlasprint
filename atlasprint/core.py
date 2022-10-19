@@ -159,23 +159,24 @@ def print_layout(
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
 
-        if scale:
-            atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
-            atlas_layout.referenceMap().setScale(scale)
+        if atlas_layout.referenceMap():
+            if scale:
+                atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
+                atlas_layout.referenceMap().setScale(scale)
 
-        if scales:
-            atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
-            settings.predefinedMapScales = scales
+            if scales:
+                atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
+                settings.predefinedMapScales = scales
 
-        if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
-            use_project = project.useProjectScales()
-            map_scales = project.mapScales()
-            if not use_project or len(map_scales) == 0:
-                logger.info(
-                    'Map scales not found in project, fetching predefined map scales in global config'
-                )
-                map_scales = global_scales()
-            settings.predefinedMapScales = map_scales
+            if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
+                use_project = project.useProjectScales()
+                map_scales = project.mapScales()
+                if not use_project or len(map_scales) == 0:
+                    logger.info(
+                        'Map scales not found in project, fetching predefined map scales in global config'
+                    )
+                    map_scales = global_scales()
+                settings.predefinedMapScales = map_scales
 
     elif master_layout.layoutType() == QgsMasterLayoutInterface.Report:
         report_layout = master_layout
