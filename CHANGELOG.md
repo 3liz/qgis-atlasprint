@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 3.3.2 - 2022-10-19
+
+* Fix an issue when the layout does not have a map, fix #59 (contribution from @benoitblanc)
+
 ## 3.3.1 - 2022-03-04
 
 * Improve logs about additional parameters and current login
