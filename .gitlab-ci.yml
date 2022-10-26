@@ -9,9 +9,6 @@ stages:
 
 variables:
   FACTORY_PRODUCT_NAME: atlasprint
-  FACTORY_PACKAGE_NAME: qgis_atlasplugin
-  FACTORY_PACKAGE_TYPE: plugin
-  FACTORY_MANIFEST: ".lizcloud/factory.manifest"
 
 # Deprecated
 check_tag:
@@ -118,46 +115,38 @@ push-repository:
   tags:
     - fabric
 
+#
+# Infrav deploy
+#
 
-# Deprecated
-build_3:
-  stage: build
-  script:
-    - make -C .lizcloud -f factory.mk package
-  environment:
-    name: snap
-  artifacts:
-    paths:
-      - ".lizcloud/factory.manifest"
-  tags:
-    - infrav3
-
-# Deprecated
-deploy_snap_3:
-  stage: deploy
-  script:
-    - $FACTORY_SCRIPTS/deploy-package $FACTORY_PACKAGE_NAME
-  environment:
-    name: snap
+.infrav3-package:
   dependencies:
-      - build_3
+    - version
+    - package-zip
+  script:
+    - $FACTORY_SCRIPTS/make-package-$CI_STAGING qgis_atlasprint ${VERSION} ${FACTORY_PRODUCT_NAME} qgis-plugin
   tags:
     - infrav3
+  variables:
+    CI_ARCHIVE: ${FACTORY_PRODUCT_NAME}.${VERSION}.zip
 
-# Deprecated
+deploy_snap_3:
+  extends: .infrav3-package   
+  stage: deploy
+  environment:
+    name: snap
+  variables:
+    CI_STAGING: snapshot
+
 release_prod_3:
+  extends: .infrav3-package   
   stage: release
-  script:
-    - $FACTORY_SCRIPTS/release-package $FACTORY_PACKAGE_NAME
   environment:
     name: production
-  dependencies:
-      - build_3
-  when: manual
   only:
     - tags
-  tags:
-    - infrav3
+  variables:
+    CI_STAGING: release
 
 deploy_snap_2:
   stage: deploy
