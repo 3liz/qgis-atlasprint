@@ -12,9 +12,8 @@ tracker=https://github.com/3liz/qgis-atlasprint/issues
 repository=https://github.com/3liz/qgis-atlasprint
 homepage=https://github.com/3liz/qgis-atlasprint
 
-# Done by qgis-plugin-ci, but still need manual editing
-version=3.3.2
 # Done auto by qgis-plugin-ci
+version=master
 commitNumber=
 commitSha1=
 dateTime=

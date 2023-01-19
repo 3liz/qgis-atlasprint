@@ -10,17 +10,6 @@ stages:
 variables:
   FACTORY_PRODUCT_NAME: atlasprint
 
-# Deprecated
-check_tag:
-  stage: tests
-  only:
-    - tags
-  tags:
-    - fabric
-  script:
-    - export TAG_NAME=${CI_COMMIT_REF_NAME}
-    - .lizcloud/check_tag.sh ${TAG_NAME}
-
 test:ltr:
   stage: tests
   script:
@@ -116,7 +105,7 @@ push-repository:
     - fabric
 
 #
-# Infrav deploy
+# Infrav3 deploy
 #
 
 .infrav3-package:
@@ -131,7 +120,7 @@ push-repository:
     CI_ARCHIVE: ${FACTORY_PRODUCT_NAME}.${VERSION}.zip
 
 deploy_snap_3:
-  extends: .infrav3-package   
+  extends: .infrav3-package
   stage: deploy
   environment:
     name: snap
@@ -139,7 +128,7 @@ deploy_snap_3:
     CI_STAGING: snapshot
 
 release_prod_3:
-  extends: .infrav3-package   
+  extends: .infrav3-package
   stage: release
   environment:
     name: production
