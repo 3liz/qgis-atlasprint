@@ -1,16 +1,16 @@
 SHELL:=bash
-#
-# wmts plugin makefile
-#
 
 COMMITID=$(shell git rev-parse --short HEAD)
+
+REGISTRY_URL ?= 3liz
+
 
 ifdef REGISTRY_URL
 	REGISTRY_PREFIX=$(REGISTRY_URL)/
 endif
 
 # Qgis version flavor
-FLAVOR:=3.16
+FLAVOR:=3.22
 
 BECOME_USER:=$(shell id -u)
 
