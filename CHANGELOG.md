@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 3.4.0 - 2024-05-27
+
 * Bump QGIS minimum version to QGIS 3.22
+* Fix PDF not being rasterized
 
 ## 3.3.2 - 2022-10-19
 
