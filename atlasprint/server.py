@@ -22,22 +22,31 @@ from qgis.server import QgsServerInterface
 
 from atlasprint.filter import AtlasPrintFilter
 from atlasprint.logger import Logger
+from atlasprint.plausible import Plausible
 from atlasprint.service import AtlasPrintService
 from atlasprint.tools import version
 
-__copyright__ = 'Copyright 2021, 3Liz'
+__copyright__ = 'Copyright 2024, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
 
 
 class AtlasPrintServer:
     """Plugin for QGIS server
-    this plugin loads atlasprint filter"""
+    this plugin loads AtlasPrint filter"""
 
     def __init__(self, server_iface: QgsServerInterface) -> None:
         self.server_iface = server_iface
         self.logger = Logger()
         self.logger.info('Init server version "{}"'.format(version()))
+
+        # noinspection PyBroadException
+        try:
+            self.plausible = Plausible()
+            self.plausible.request_stat_event()
+        except Exception as e:
+            self.logger.log_exception(e)
+            self.logger.critical('Error while calling the API stats')
 
         # Register service
         try:
