@@ -215,6 +215,10 @@ def print_layout(
         error = result_message(result)
     else:
         # Default to PDF
+        # PDF settings
+        if atlas_layout:
+            settings.rasterizeWholeImage = atlas_layout.customProperty("rasterize", False)
+        # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
         # Let's override error message
         _ = error
