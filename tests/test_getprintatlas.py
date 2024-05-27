@@ -1,8 +1,6 @@
 import json
 import logging
 
-from qgis.core import Qgis
-
 LOGGER = logging.getLogger('server')
 
 __copyright__ = 'Copyright 2021, 3Liz'
@@ -53,10 +51,7 @@ def test_invalid_exp_filter(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    if Qgis.QGIS_VERSION_INT >= 32200:
-        expected = 'unexpected end of file'
-    else:
-        expected = 'unexpected $end'
+    expected = 'unexpected end of file'
     assert b['message'] == (
         'ATLAS - Error from the user while generating the PDF: Expression is invalid: \n'
         'syntax error, {}, expecting COMMA or \')\''.format(expected))
@@ -75,10 +70,7 @@ def test_invalid_exp_filter_field(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    if Qgis.QGIS_VERSION_INT < 31600:
-        field = 'Column'
-    else:
-        field = 'Field'
+    field = 'Field'
     assert b['message'] == (
         'ATLAS - Error from the user while generating the PDF: Expression is invalid, eval error: '
         '{} \'fakeId\' not found'.format(field))

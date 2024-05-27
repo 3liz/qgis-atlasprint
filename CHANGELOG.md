@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Bump QGIS minimum version to QGIS 3.22
+
 ## 3.3.2 - 2022-10-19
 
 * Fix an issue when the layout does not have a map, fix #59 (contribution from @benoitblanc)
