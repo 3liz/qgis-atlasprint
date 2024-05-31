@@ -16,7 +16,6 @@ from atlasprint.tools import to_bool, version
 MIN_SECONDS = 3600
 ENV_SKIP_STATS = "3LIZ_SKIP_STATS"
 
-PLAUSIBLE_DOMAIN_LIZCLOUD = "plugin.server.lizcloud"
 PLAUSIBLE_DOMAIN_PROD = "plugin.server.lizmap.com"
 PLAUSIBLE_URL_PROD = "https://bourbon.3liz.com/api/event"
 
@@ -76,7 +75,7 @@ class Plausible:
 
         is_lizcloud = "lizcloud" in os.getenv("QGIS_SERVER_APPLICATION_NAME", "").lower()
         if is_lizcloud:
-            plausible_domain = PLAUSIBLE_DOMAIN_LIZCLOUD
+            plausible_domain = os.getenv("QGIS_SERVER_PLAUSIBLE_DOMAIN_NAME", PLAUSIBLE_DOMAIN_PROD)
         else:
             plausible_domain = PLAUSIBLE_DOMAIN_TEST if debug else PLAUSIBLE_DOMAIN_PROD
 
