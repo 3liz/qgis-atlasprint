@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Fix Python exception about PDF rasterized
+
 ## 3.4.0 - 2024-05-27
 
 * Bump QGIS minimum version to QGIS 3.22

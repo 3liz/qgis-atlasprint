@@ -22,6 +22,7 @@ from qgis.core import (
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
 
 from .logger import Logger
+from .tools import to_bool
 
 __copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
@@ -217,7 +218,7 @@ def print_layout(
         # Default to PDF
         # PDF settings
         if atlas_layout:
-            settings.rasterizeWholeImage = atlas_layout.customProperty("rasterize", False)
+            settings.rasterizeWholeImage = to_bool(atlas_layout.customProperty("rasterize", False), default_value=False)
         # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
         # Let's override error message
