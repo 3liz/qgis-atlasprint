@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 3.4.1 - 2024-05-31
+
 * Fix Python exception about PDF rasterized
 
 ## 3.4.0 - 2024-05-27
