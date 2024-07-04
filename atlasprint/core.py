@@ -318,7 +318,6 @@ def optimize_expression(layer, expression):
         logger.info("Primary keys are not defined in the layer '{}'.".format(layer.id()))
         return expression
 
-
     # extract primary key from fields list
     pk_index = primary_keys[0];
     pk_field = layer.fields().at(pk_index)
