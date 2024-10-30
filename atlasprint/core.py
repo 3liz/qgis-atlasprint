@@ -226,14 +226,14 @@ def print_layout(
         error = result_message(result)
 
     if result != QgsLayoutExporter.Success:
-        raise Exception('Export not generated in QGIS exporter {} : {}'.format(export_path, error))
+        raise AtlasPrintException('Export not generated in QGIS exporter {} : {}'.format(export_path, error))
 
     if not export_path.is_file():
         logger.warning(
             "No error from QGIS Exporter, but the file does not exist.\n"
             "Message from QGIS exporter : {}\n"
             "File path : {}\n".format(error, export_path))
-        raise Exception('Export OK from QGIS, but file not found on the file system : {}'.format(export_path))
+        raise AtlasPrintException('Export OK from QGIS, but file not found on the file system : {}'.format(export_path))
 
     return export_path
 
@@ -259,7 +259,7 @@ def result_message(error) -> str:
             "Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : "
             "{}".format(error)
         )
-        return 'Unknown error'
+        return 'Unknown error : {}'.format(error)
 
 
 def clean_string(input_string) -> str:
