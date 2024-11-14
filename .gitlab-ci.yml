@@ -15,14 +15,14 @@ test:ltr:
   script:
     - make -C tests FLAVOR=ltr
   tags:
-    - factory
+    - factory-dind
 
 test:release:
   stage: tests
   script:
     - make -C tests FLAVOR=release
   tags:
-    - factory
+    - factory-dind
 
 version:
   stage: tests
@@ -47,7 +47,7 @@ package-zip:
       package ${VERSION}
       --plugin-repo-url https://packages.3liz.org/pub/${FACTORY_PRODUCT_NAME}-qgis-plugin/${STATUS}/
   tags:
-    - infrav3-plain
+    - factory-plain
   artifacts:
     untracked: true
     expose_as: 'QGIS package'
@@ -88,7 +88,7 @@ edit-repository:
   script:
     - qgis-plugin-repo merge plugins.xml tmp_repository/*.xml
   tags:
-    - factory
+    - factory-dind
   artifacts:
     untracked: true
     paths:
@@ -104,38 +104,6 @@ push-repository:
   tags:
     - fabric
 
-#
-# Infrav3 deploy
-#
-
-.infrav3-package:
-  dependencies:
-    - version
-    - package-zip
-  script:
-    - $FACTORY_SCRIPTS/make-package-$CI_STAGING qgis_atlasprint ${VERSION} ${FACTORY_PRODUCT_NAME} qgis-plugin
-  tags:
-    - infrav3
-  variables:
-    CI_ARCHIVE: ${FACTORY_PRODUCT_NAME}.${VERSION}.zip
-
-deploy_snap_3:
-  extends: .infrav3-package
-  stage: deploy
-  environment:
-    name: snap
-  variables:
-    CI_STAGING: snapshot
-
-release_prod_3:
-  extends: .infrav3-package
-  stage: release
-  environment:
-    name: production
-  only:
-    - tags
-  variables:
-    CI_STAGING: release
 
 deploy_snap_2:
   stage: deploy
