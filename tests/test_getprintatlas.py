@@ -1,6 +1,8 @@
 import json
 import logging
 
+from qgis.core import Qgis
+
 LOGGER = logging.getLogger('server')
 
 __copyright__ = 'Copyright 2021, 3Liz'
@@ -51,10 +53,13 @@ def test_invalid_exp_filter(client):
     assert rv.headers.get('Content-Type', '').find('application/json') == 0
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
-    expected = 'unexpected end of file'
-    assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: Expression is invalid: \n'
-        'syntax error, {}, expecting COMMA or \')\''.format(expected))
+
+    message = "ATLAS - Error from the user while generating the PDF: Expression is invalid: \n"
+    if Qgis.versionInt() >= 34200:
+        message += "Incomplete expression. You might not have finished the full expression., expecting COMMA or ')'"
+    else:
+        message += "syntax error, unexpected end of file, expecting COMMA or ')'"
+    assert b['message'] == message
 
 
 def test_invalid_exp_filter_field(client):

@@ -50,7 +50,8 @@ def global_scales():
     # Copied from QGIS source code
     default_scales = (
         '1:1000000,1:500000,1:250000,1:100000,1:50000,1:25000,'
-        '1:10000,1:5000,1:2500,1:1000,1:500')
+        '1:10000,1:5000,1:2500,1:1000,1:500'
+    )
 
     settings = QgsSettings()
     scales_string = settings.value('Map/scales', default_scales)
