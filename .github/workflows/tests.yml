@@ -123,7 +123,7 @@ jobs:
         --create-plugin-repo
 
     - name: Repository Dispatch
-      uses: peter-evans/repository-dispatch@v2
+      uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ secrets.BOT_HUB_TOKEN }}
         repository: 3liz/3liz.github.io
