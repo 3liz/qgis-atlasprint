@@ -15,9 +15,9 @@ jobs:
     strategy:
       matrix:
         qgis_version: [
-            "3.22",
             "3.28",
             "3.34",
+            "3.40",
             "nightly-release",
         ]
 
@@ -103,15 +103,6 @@ jobs:
       with:
         bodyFile: release.md
         token: ${{ secrets.BOT_HUB_TOKEN }}
-
-    - name: Tweet
-      uses: mugi111/tweet-trigger-release@v1.2
-      with:
-        consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}
-        consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}
-        access_token_key: ${{ secrets.TWITTER_ACCESS_TOKEN_KEY }}
-        access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
-        tweet_body: 'New release AtlasPrint ${{ env.RELEASE_VERSION }} for #QGIS Server 🚀 https://github.com/3liz/qgis-atlasprint/releases'
 
     - name: Package the plugin and deploy it in the release
       run: >-

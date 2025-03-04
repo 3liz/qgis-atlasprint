@@ -1,6 +1,6 @@
 [general]
 name=atlasprint
-qgisMinimumVersion=3.22
+qgisMinimumVersion=3.28
 description=Add atlas capabilities for getPrint request in WMS for QGIS Server
 author=3Liz
 email=info@3liz.com
