@@ -6,11 +6,17 @@ import traceback
 
 from qgis.core import Qgis, QgsMessageLog
 
+DEBUG = False
 
 class Logger:
 
     def __init__(self):
         self.plugin = 'AtlasPrint'
+
+    def debug(self, message):
+        if not DEBUG:
+            return
+        QgsMessageLog.logMessage(f'DEBUG : {message}', self.plugin, Qgis.Info)
 
     def info(self, message):
         QgsMessageLog.logMessage(message, self.plugin, Qgis.Info)

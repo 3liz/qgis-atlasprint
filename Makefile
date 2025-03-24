@@ -1,4 +1,4 @@
 .PHONY: tests
 
-test:
+tests:
 	$(MAKE) -C tests

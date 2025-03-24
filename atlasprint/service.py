@@ -49,9 +49,9 @@ class AtlasPrintError(Exception):
         super().__init__(msg)
         self.msg = msg
         self.code = code
-        Logger().critical("Atlas print request error {}: {}".format(code, msg))
+        Logger().critical(f"Atlas print request error {code}: {msg}")
 
-    def formatResponse(self, response: QgsServerResponse) -> None:
+    def format_response(self, response: QgsServerResponse) -> None:
         """ Format error response
         """
         body = {'status': 'fail', 'message': self.msg}
@@ -115,16 +115,15 @@ class AtlasPrintService(QgsService):
             else:
                 raise AtlasPrintError(
                     400,
-                    "Invalid REQUEST parameter: must be one of GetCapabilities, GetPrint, found '{}'".format(
-                        request_param
-                    ))
+                    f"Invalid REQUEST parameter: must be one of 'GetCapabilities', 'GetPrint', found '{request_param}'"
+                )
 
         except AtlasPrintError as err:
-            err.formatResponse(response)
+            err.format_response(response)
         except Exception:
-            self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
-            err = AtlasPrintError(500, "Internal 'atlasprint' service error")
-            err.formatResponse(response)
+            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
+            err = AtlasPrintError(500, "Internal 'AtlasPrint' service error")
+            err.format_response(response)
         finally:
             # Remove previous login
             self.logger.info("Removing user and group variables from the QGIS project")
@@ -174,7 +173,7 @@ class AtlasPrintService(QgsService):
                 expression = QgsExpression(feature_filter)
                 if expression.hasParserError():
                     raise AtlasPrintException(
-                        'Expression is invalid: {}'.format(expression.parserErrorString()))
+                        f'Expression is invalid: {expression.parserErrorString()}')
 
             if scale and scales:
                 raise AtlasPrintException('SCALE and SCALES can not be used together.')
@@ -214,14 +213,14 @@ class AtlasPrintService(QgsService):
                 **additional_params
             )
         except AtlasPrintException as e:
-            raise AtlasPrintError(400, 'ATLAS - Error from the user while generating the PDF: {}'.format(e))
+            raise AtlasPrintError(400, f'ATLAS - Error from the user while generating the PDF: {e}')
         except Exception:
-            self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
-            raise AtlasPrintError(500, "Internal 'atlasprint' service error")
+            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
+            raise AtlasPrintError(500, "Internal 'AtlasPrint' service error")
 
         path = Path(output_path)
         if not path.exists():
-            raise AtlasPrintError(404, "ATLAS {} not found".format(output_format.name))
+            raise AtlasPrintError(404, f"ATLAS {output_format.name} not found")
 
         # Send PDF
         response.setHeader('Content-Type', output_format.value)
@@ -230,5 +229,5 @@ class AtlasPrintService(QgsService):
             response.write(path.read_bytes())
             path.unlink()
         except Exception:
-            self.logger.critical("Error occurred while reading {} file".format(output_format.name))
+            self.logger.critical(f"Error occurred while reading {output_format.name} file")
             raise

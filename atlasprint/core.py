@@ -123,7 +123,7 @@ def print_layout(
     logger = Logger()
 
     if not master_layout:
-        raise AtlasPrintException('Layout `{}` not found'.format(layout_name))
+        raise AtlasPrintException(f'Layout `{layout_name}` not found')
 
     if master_layout.layoutType() == QgsMasterLayoutInterface.PrintLayout:
         for _print_layout in manager.printLayouts():
@@ -133,12 +133,12 @@ def print_layout(
 
         atlas = atlas_layout.atlas()
         if not atlas.enabled():
-            raise AtlasPrintException('The layout is not enabled for an atlas')
+            raise AtlasPrintException(f'The layout `{layout_name}` is not enabled for an atlas')
 
         layer = atlas.coverageLayer()
 
         if feature_filter is None:
-            raise AtlasPrintException('EXP_FILTER is mandatory to print an atlas layout')
+            raise AtlasPrintException(f'EXP_FILTER is mandatory to print an atlas layout `{layout_name}`')
 
         feature_filter = optimize_expression(layer, feature_filter)
 
@@ -202,10 +202,10 @@ def print_layout(
                     'skipping'.format(key=key.lower(), value=value))
         Logger().info("End of additional parameters")
 
-    file_name = '{}_{}.{}'.format(clean_string(layout_name), uuid4(), output_format.name.lower())
+    file_name = f'{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}'
     export_path = Path(tempfile.gettempdir()).joinpath(file_name)
 
-    Logger().info("Exporting the request in {} using {}".format(export_path, output_format.value))
+    Logger().info(f"Exporting the request in {export_path} using {output_format.value}")
 
     if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
         exporter = QgsLayoutExporter(atlas_layout or report_layout)
@@ -219,7 +219,10 @@ def print_layout(
         # Default to PDF
         # PDF settings
         if atlas_layout:
-            settings.rasterizeWholeImage = to_bool(atlas_layout.customProperty("rasterize", False), default_value=False)
+            settings.rasterizeWholeImage = to_bool(
+                atlas_layout.customProperty("rasterize", False),
+                default_value=False,
+            )
         # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
         # Let's override error message
@@ -227,14 +230,14 @@ def print_layout(
         error = result_message(result)
 
     if result != QgsLayoutExporter.Success:
-        raise AtlasPrintException('Export not generated in QGIS exporter {} : {}'.format(export_path, error))
+        raise AtlasPrintException(f'Export not generated in QGIS exporter {export_path} : {error}')
 
     if not export_path.is_file():
         logger.warning(
             "No error from QGIS Exporter, but the file does not exist.\n"
             "Message from QGIS exporter : {}\n"
             "File path : {}\n".format(error, export_path))
-        raise AtlasPrintException('Export OK from QGIS, but file not found on the file system : {}'.format(export_path))
+        raise AtlasPrintException(f'Export OK from QGIS, but file not found on the file system : {export_path}')
 
     return export_path
 
@@ -257,10 +260,9 @@ def result_message(error) -> str:
         return 'Iterator error'
     else:
         Logger().critical(
-            "Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : "
-            "{}".format(error)
+            f"Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : {error}"
         )
-        return 'Unknown error : {}'.format(error)
+        return f'Unknown error : {error}'
 
 
 def clean_string(input_string) -> str:
@@ -299,7 +301,7 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
         return OutputFormat.Pdf
 
     # Default value
-    Logger().info('Output format is invalid, default to PDF. It was "{}"'.format(output))
+    Logger().info(f'Output format is invalid, default to PDF. It was "{output}"')
     return OutputFormat.Pdf
 
 
@@ -315,15 +317,15 @@ def optimize_expression(layer, expression):
 
     primary_keys = layer.primaryKeyAttributes()
     if len(primary_keys) != 1:
-        logger.info("Primary keys are not defined in the layer '{}'.".format(layer.id()))
+        logger.info(f"Primary keys are not defined in the layer '{layer.id()}'.")
         return expression
 
     field = layer.fields().at(0)
     if not field.isNumeric():
-        logger.info("The field '{}' is not numeric in layer '{}'.".format(field.name(), layer.id()))
+        logger.info(f"The field '{field.name()}' is not numeric in layer '{layer.id()}'.")
         return expression
 
-    expression = expression.replace('$id', '"{}"'.format(field.name()))
-    logger.info('$id has been replaced by "{}" in layer "{}"'.format(field.name(), layer.id()))
+    expression = expression.replace('$id', f'"{field.name()}"')
+    logger.info(f'$id has been replaced by "{field.name()}" in layer "{layer.id()}"')
 
     return expression
