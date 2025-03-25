@@ -72,6 +72,7 @@ def print_layout(
     feature_filter: str = None,
     scales: list = None,
     scale: int = None,
+    request_id: str = '',
     **additional_params
 ):
     """Generate a PDF for an atlas or a report.
@@ -96,9 +97,13 @@ def print_layout(
 
     :param output_format: The output format, default to PDF if not provided.
 
+    :param request_id: The X-Request-ID for a better debug.
+
     :return: Path to the PDF.
     :rtype: basestring
     """
+    logger = Logger()
+
     canvas = QgsMapCanvas()
     bridge = QgsLayerTreeMapCanvasBridge(
         project.layerTreeRoot(),
@@ -108,6 +113,7 @@ def print_layout(
     manager = project.layoutManager()
     master_layout = manager.layoutByName(layout_name)
 
+    logger.debug(f'Request-ID {request_id}, preparing settings for the output format "{output_format}"')
     if output_format == OutputFormat.Svg:
         settings = QgsLayoutExporter.SvgExportSettings()
     elif output_format in (OutputFormat.Png, OutputFormat.Jpeg):
@@ -120,10 +126,10 @@ def print_layout(
     atlas_layout = None
     report_layout = None
 
-    logger = Logger()
-
     if not master_layout:
-        raise AtlasPrintException(f'Layout `{layout_name}` not found')
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, layout `{layout_name}` not found'
+        )
 
     if master_layout.layoutType() == QgsMasterLayoutInterface.PrintLayout:
         for _print_layout in manager.printLayouts():
@@ -133,19 +139,24 @@ def print_layout(
 
         atlas = atlas_layout.atlas()
         if not atlas.enabled():
-            raise AtlasPrintException(f'The layout `{layout_name}` is not enabled for an atlas')
+            raise AtlasPrintException(
+                f'Request-ID {request_id}, the layout `{layout_name}` is not enabled for an atlas'
+            )
 
         layer = atlas.coverageLayer()
 
         if feature_filter is None:
-            raise AtlasPrintException(f'EXP_FILTER is mandatory to print an atlas layout `{layout_name}`')
+            raise AtlasPrintException(
+                f'Request-ID {request_id}, EXP_FILTER is mandatory to print an atlas layout `{layout_name}`'
+            )
 
-        feature_filter = optimize_expression(layer, feature_filter)
+        feature_filter = optimize_expression(layer, feature_filter, request_id)
 
         expression = QgsExpression(feature_filter)
         if expression.hasParserError():
-            raise AtlasPrintException('Expression is invalid, parser error: {}'.format(
-                expression.parserErrorString()))
+            raise AtlasPrintException(
+                f'Request-ID {request_id}, expression is invalid, parser error: {expression.parserErrorString()}'
+            )
 
         context = QgsExpressionContext()
         context.appendScope(QgsExpressionContextUtils.globalScope())
@@ -155,8 +166,9 @@ def print_layout(
         context.appendScope(QgsExpressionContextUtils.layerScope(layer))
         expression.prepare(context)
         if expression.hasEvalError():
-            raise AtlasPrintException('Expression is invalid, eval error: {}'.format(
-                expression.evalErrorString()))
+            raise AtlasPrintException(
+                f'Request-ID {request_id}, expression is invalid, eval error: {expression.evalErrorString()}'
+            )
 
         atlas.setFilterFeatures(True)
         atlas.setFilterExpression(feature_filter)
@@ -175,7 +187,8 @@ def print_layout(
                 map_scales = project.mapScales()
                 if not use_project or len(map_scales) == 0:
                     logger.info(
-                        'Map scales not found in project, fetching predefined map scales in global config'
+                        f'Request-ID {request_id}, map scales not found in project, fetching predefined map scales in '
+                        f'global config'
                     )
                     map_scales = global_scales()
                 settings.predefinedMapScales = map_scales
@@ -184,28 +197,32 @@ def print_layout(
         report_layout = master_layout
 
     else:
-        raise AtlasPrintException('The layout is not supported by the plugin')
+        raise AtlasPrintException(f'Request-ID {request_id}, the layout is not supported by the plugin')
 
     if atlas_layout:
-        Logger().info("Checking for additional parameters to set in the layout before printing…")
+        Logger().info(
+            f"Request-ID {request_id}, checking for additional parameters to set in the layout before printing…"
+        )
         for key, value in additional_params.items():
             found = False
             item = atlas_layout.itemById(key.lower())
             if isinstance(item, QgsLayoutItemLabel):
                 item.setText(value)
                 logger.info(
-                    'Additional parameter "{key}" found in the layout, setting the value to "{value}"'.format(
-                        key=key.lower(), value=value))
+                    f'Request-ID {request_id}, additional parameter "{key.lower()}" found in the layout, '
+                    f'setting the value to "{value}"'
+                )
             if not found:
                 logger.info(
-                    'Additional parameter "{key}" has not been found in the layout, the value was "{value}", '
-                    'skipping'.format(key=key.lower(), value=value))
-        Logger().info("End of additional parameters")
+                    f'Additional parameter "{key.lower()}" has not been found in the layout, the value was "{value}", '
+                    f'skipping'
+                )
+        Logger().info(f"Request-ID {request_id}, end of additional parameters")
 
     file_name = f'{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}'
     export_path = Path(tempfile.gettempdir()).joinpath(file_name)
 
-    Logger().info(f"Exporting the request in {export_path} using {output_format.value}")
+    Logger().info(f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}")
 
     if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
         exporter = QgsLayoutExporter(atlas_layout or report_layout)
@@ -229,14 +246,20 @@ def print_layout(
         _ = error
         error = result_message(result)
 
+    Logger().info(f"Request-ID {request_id}, export done, result {result_message(result)}")
+
     if result != QgsLayoutExporter.Success:
-        raise AtlasPrintException(f'Export not generated in QGIS exporter {export_path} : {error}')
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, export not generated in QGIS exporter {export_path} : {error}'
+        )
 
     if not export_path.is_file():
         logger.warning(
-            "No error from QGIS Exporter, but the file does not exist.\n"
-            "Message from QGIS exporter : {}\n"
-            "File path : {}\n".format(error, export_path))
+            f"Request-ID {request_id}, \n"
+            f"No error from QGIS Exporter, but the file does not exist.\n"
+            f"Message from QGIS exporter : {error}\n"
+            f"File path : {export_path}\n"
+        )
         raise AtlasPrintException(f'Export OK from QGIS, but file not found on the file system : {export_path}')
 
     return export_path
@@ -305,27 +328,27 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
     return OutputFormat.Pdf
 
 
-def optimize_expression(layer, expression):
+def optimize_expression(layer, expression, request_id: str = 'ND'):
     """Check if we can optimize the expression.
 
     https://github.com/3liz/qgis-atlasprint/issues/23
     """
     logger = Logger()
     if expression.find('$id') < 0:
-        logger.info("'$id' not found in the expression, returning the input expression.")
+        logger.info(f"Request-ID {request_id} : $id' not found in the expression, returning the input expression.")
         return expression
 
     primary_keys = layer.primaryKeyAttributes()
     if len(primary_keys) != 1:
-        logger.info(f"Primary keys are not defined in the layer '{layer.id()}'.")
+        logger.info(f"Request-ID {request_id} : Primary keys are not defined in the layer '{layer.id()}'.")
         return expression
 
     field = layer.fields().at(0)
     if not field.isNumeric():
-        logger.info(f"The field '{field.name()}' is not numeric in layer '{layer.id()}'.")
+        logger.info(f"Request-ID {request_id} : The field '{field.name()}' is not numeric in layer '{layer.id()}'.")
         return expression
 
     expression = expression.replace('$id', f'"{field.name()}"')
-    logger.info(f'$id has been replaced by "{field.name()}" in layer "{layer.id()}"')
+    logger.info(f'Request-ID {request_id} : $id has been replaced by "{field.name()}" in layer "{layer.id()}"')
 
     return expression

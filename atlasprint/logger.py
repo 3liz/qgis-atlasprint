@@ -8,6 +8,7 @@ from qgis.core import Qgis, QgsMessageLog
 
 DEBUG = False
 
+
 class Logger:
 
     def __init__(self):

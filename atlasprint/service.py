@@ -45,16 +45,21 @@ def write_json_response(data: Dict[str, str], response: QgsServerResponse, code:
 
 class AtlasPrintError(Exception):
 
-    def __init__(self, code: int, msg: str) -> None:
+    def __init__(self, code: int, msg: str, request_id: str) -> None:
         super().__init__(msg)
         self.msg = msg
         self.code = code
-        Logger().critical(f"Atlas print request error {code}: {msg}")
+        self.request_id = request_id
+        Logger().critical(f"Atlas print request error {code}, X-Request-ID {request_id}: {msg}")
 
     def format_response(self, response: QgsServerResponse) -> None:
         """ Format error response
         """
-        body = {'status': 'fail', 'message': self.msg}
+        body = {
+            'status': 'fail',
+            'request_id': self.request_id,
+            'message': self.msg,
+        }
         response.clear()
         write_json_response(body, response, self.code)
 
@@ -85,11 +90,13 @@ class AtlasPrintService(QgsService):
         return method in (
             QgsServerRequest.GetMethod, QgsServerRequest.PostMethod)
 
-    def executeRequest(self, request: QgsServerRequest, response: QgsServerResponse,
-                       project: QgsProject) -> None:
+    def executeRequest(
+            self, request: QgsServerRequest, response: QgsServerResponse,
+            project: QgsProject) -> None:
         """ Execute a 'ATLAS' request
         """
-
+        headers = request.headers()
+        request_id = headers.get('X-Request-Id', 'ND')
         params = request.parameters()
 
         # noinspection PyBroadException
@@ -101,7 +108,6 @@ class AtlasPrintService(QgsService):
             elif request_param == 'getprint':
 
                 # Set current Lizmap user and groups in the project before printing
-                headers = request.headers()
                 lizmap_user = get_lizmap_user_login(params, headers)
                 lizmap_group = get_lizmap_groups(params, headers)
                 custom_var = project.customVariables()
@@ -111,18 +117,20 @@ class AtlasPrintService(QgsService):
                     custom_var['lizmap_user_groups'] = list(lizmap_group)  # QGIS can't store a tuple
                     project.setCustomVariables(custom_var)
 
-                self.get_print(params, response, project, lizmap_user, lizmap_group)
+                self.get_print(params, response, project, lizmap_user, lizmap_group, request_id)
             else:
                 raise AtlasPrintError(
                     400,
-                    f"Invalid REQUEST parameter: must be one of 'GetCapabilities', 'GetPrint', found '{request_param}'"
+                    f"Invalid REQUEST parameter: must be one of 'GetCapabilities', "
+                    f"'GetPrint', Request-ID {request_id}, found '{request_param}'",
+                    request_id,
                 )
 
         except AtlasPrintError as err:
             err.format_response(response)
         except Exception:
-            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
-            err = AtlasPrintError(500, "Internal 'AtlasPrint' service error")
+            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}, X-Request-ID {request_id}")
+            err = AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
             err.format_response(response)
         finally:
             # Remove previous login
@@ -154,7 +162,8 @@ class AtlasPrintService(QgsService):
             response: QgsServerResponse,
             project: QgsProject,
             lizmap_user: str,
-            lizmap_user_group: tuple
+            lizmap_user_group: tuple,
+            request_id: str,
     ) -> None:
         """ Get print document
         """
@@ -210,17 +219,19 @@ class AtlasPrintService(QgsService):
                 scale=scale,
                 scales=scales,
                 feature_filter=feature_filter,
+                request_id=request_id,
                 **additional_params
             )
         except AtlasPrintException as e:
-            raise AtlasPrintError(400, f'ATLAS - Error from the user while generating the PDF: {e}')
+            raise AtlasPrintError(
+                400, f'ATLAS - Error from the user while generating the PDF: {e}', request_id)
         except Exception:
             self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
-            raise AtlasPrintError(500, "Internal 'AtlasPrint' service error")
+            raise AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
 
         path = Path(output_path)
         if not path.exists():
-            raise AtlasPrintError(404, f"ATLAS {output_format.name} not found")
+            raise AtlasPrintError(404, f"ATLAS {output_format.name} not found", request_id)
 
         # Send PDF
         response.setHeader('Content-Type', output_format.value)

@@ -36,12 +36,12 @@ def test_no_exp_filter(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
     assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: EXP_FILTER is mandatory to print an atlas '
-        'layout')
+        'ATLAS - Error from the user while generating the PDF: Request-ID ND, EXP_FILTER is mandatory to print an '
+        'atlas layout `layout1-atlas`')
 
 
 def test_invalid_exp_filter(client):
-    """ Test with an invalid EXP_FILTER (not well formed). """
+    """ Test with an invalid EXP_FILTER (not well-formed). """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
@@ -77,7 +77,7 @@ def test_invalid_exp_filter_field(client):
     assert b['status'] == 'fail'
     field = 'Field'
     assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: Expression is invalid, eval error: '
+        'ATLAS - Error from the user while generating the PDF: Request-ID ND, expression is invalid, eval error: '
         '{} \'fakeId\' not found'.format(field))
 
 
@@ -95,7 +95,7 @@ def test_invalid_template(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
     assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: Layout `Fakelayout1-atlas` not found')
+        'ATLAS - Error from the user while generating the PDF: Request-ID ND, layout `Fakelayout1-atlas` not found')
 
 
 def test_invalid_scale_and_scales(client):
@@ -165,7 +165,7 @@ def test_invalid_atlas_layout(client):
     b = json.loads(rv.content.decode('utf-8'))
     assert b['status'] == 'fail'
     assert b['message'] == (
-        'ATLAS - Error from the user while generating the PDF: Layout `layout-no-atlas` not found')
+        'ATLAS - Error from the user while generating the PDF: Request-ID ND, layout `layout-no-atlas` not found')
 
 
 def test_valid_getprint_atlas_pdf(client):
