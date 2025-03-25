@@ -38,7 +38,7 @@ class AtlasPrintServer:
     def __init__(self, server_iface: QgsServerInterface) -> None:
         self.server_iface = server_iface
         self.logger = Logger()
-        self.logger.info('Init server version "{}"'.format(version()))
+        self.logger.info(f'Init server version "{version()}"')
 
         # noinspection PyBroadException
         try:
@@ -53,12 +53,12 @@ class AtlasPrintServer:
             reg = server_iface.serviceRegistry()
             reg.registerService(AtlasPrintService())
         except Exception as e:
-            self.logger.critical('Error loading filter atlasprint : {}'.format(e))
+            self.logger.critical(f'Error loading filter AtlasPrint : {e}')
             raise
 
         # Add filter
         try:
             server_iface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
         except Exception as e:
-            self.logger.critical('Error loading filter atlasprint : {}'.format(e))
+            self.logger.critical(f'Error loading filter AtlasPrint : {e}')
             raise

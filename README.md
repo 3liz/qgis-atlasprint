@@ -13,7 +13,5 @@ For more detailed information about installation, usage etc, read in source code
 ## Running tests locally
  
  ```bash
-docker pull 3liz/qgis-platform:3.22
-docker tag 3liz/qgis-platform:3.22 qgis-platform:3.22
-make test
+make tests
 ```
