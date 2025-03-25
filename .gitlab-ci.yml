@@ -10,17 +10,18 @@ stages:
 variables:
   FACTORY_PRODUCT_NAME: atlasprint
 
-test:ltr:
+test:
   stage: tests
+  parallel:
+    matrix:
+      - QGIS_VERSION: [
+        "ltr",
+        "release",
+        "3.34",
+        "3.28",
+      ]
   script:
-    - make -C tests FLAVOR=ltr
-  tags:
-    - factory-dind
-
-test:release:
-  stage: tests
-  script:
-    - make -C tests FLAVOR=release
+    - make -C tests FLAVOR=${QGIS_VERSION}
   tags:
     - factory-dind
 
