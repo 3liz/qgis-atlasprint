@@ -10,19 +10,20 @@ stages:
 variables:
   FACTORY_PRODUCT_NAME: atlasprint
 
-test:ltr:
+test:
   stage: tests
+  parallel:
+    matrix:
+      - QGIS_VERSION: [
+        "ltr",
+        "release",
+        "3.34",
+        "3.28",
+      ]
   script:
-    - make -C tests FLAVOR=ltr
+    - make -C tests FLAVOR=${QGIS_VERSION}
   tags:
-    - factory
-
-test:release:
-  stage: tests
-  script:
-    - make -C tests FLAVOR=release
-  tags:
-    - factory
+    - factory-dind
 
 version:
   stage: tests
@@ -47,7 +48,7 @@ package-zip:
       package ${VERSION}
       --plugin-repo-url https://packages.3liz.org/pub/${FACTORY_PRODUCT_NAME}-qgis-plugin/${STATUS}/
   tags:
-    - infrav3-plain
+    - factory-plain
   artifacts:
     untracked: true
     expose_as: 'QGIS package'
@@ -78,17 +79,17 @@ push-zip-fetch-repo:
       - tmp_repository/*.xml
 
 edit-repository:
+  image: ${REGISTRY_URL}/factory-ci-runner:factory-ci
   stage: qgis-repository-edit
   dependencies:
     - package-zip
     - push-zip-fetch-repo
   before_script:
-    - PATH=$PATH:~/.local/bin
-    - pip3 install --user qgis-plugin-repo
+    - pip install qgis-plugin-repo
   script:
     - qgis-plugin-repo merge plugins.xml tmp_repository/*.xml
   tags:
-    - factory
+    - factory-plain
   artifacts:
     untracked: true
     paths:
@@ -104,38 +105,6 @@ push-repository:
   tags:
     - fabric
 
-#
-# Infrav3 deploy
-#
-
-.infrav3-package:
-  dependencies:
-    - version
-    - package-zip
-  script:
-    - $FACTORY_SCRIPTS/make-package-$CI_STAGING qgis_atlasprint ${VERSION} ${FACTORY_PRODUCT_NAME} qgis-plugin
-  tags:
-    - infrav3
-  variables:
-    CI_ARCHIVE: ${FACTORY_PRODUCT_NAME}.${VERSION}.zip
-
-deploy_snap_3:
-  extends: .infrav3-package
-  stage: deploy
-  environment:
-    name: snap
-  variables:
-    CI_STAGING: snapshot
-
-release_prod_3:
-  extends: .infrav3-package
-  stage: release
-  environment:
-    name: production
-  only:
-    - tags
-  variables:
-    CI_STAGING: release
 
 deploy_snap_2:
   stage: deploy

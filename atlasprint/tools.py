@@ -104,7 +104,7 @@ def get_lizmap_user_login(params: Dict[str, str], headers: Dict[str, str]) -> st
         user_login = headers.get('X-Lizmap-User')
         if user_login is not None:
             login = user_login
-            logger.info("Lizmap user login in request headers : {}".format(login))
+            logger.info(f"Lizmap user login in request headers : {login}")
     else:
         logger.info("No request headers provided")
 
@@ -119,6 +119,6 @@ def get_lizmap_user_login(params: Dict[str, str], headers: Dict[str, str]) -> st
         user_login = params.get('LIZMAP_USER')
         if user_login is not None:
             login = user_login
-            logger.info("Lizmap user login in parameters : {}".format(login))
+            logger.info(f"Lizmap user login in parameters : {login}")
 
     return login

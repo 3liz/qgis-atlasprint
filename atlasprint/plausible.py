@@ -85,7 +85,7 @@ class Plausible:
         if extra_debug:
             request.setRawHeader(b"X-Debug-Request", b"true")
             request.setRawHeader(b"X-Forwarded-For", b"127.0.0.1")
-        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
 
         # Qgis.QGIS_VERSION → 3.34.6-Prizren
         # noinspection PyUnresolvedReferences
@@ -125,7 +125,7 @@ class Plausible:
         logger = Logger()
         message = (
             f"Request HTTP OS process '{os.getpid()}' sent to '{plausible_url}' with domain '{plausible_domain} : ")
-        if r.error() == QNetworkReply.NoError:
+        if r.error() == QNetworkReply.NetworkError.NoError:
             logger.info(message + "OK")
         else:
             logger.warning(message + r.error())

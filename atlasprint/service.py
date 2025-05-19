@@ -45,16 +45,21 @@ def write_json_response(data: Dict[str, str], response: QgsServerResponse, code:
 
 class AtlasPrintError(Exception):
 
-    def __init__(self, code: int, msg: str) -> None:
+    def __init__(self, code: int, msg: str, request_id: str) -> None:
         super().__init__(msg)
         self.msg = msg
         self.code = code
-        Logger().critical("Atlas print request error {}: {}".format(code, msg))
+        self.request_id = request_id
+        Logger().critical(f"Atlas print request error {code}, X-Request-ID {request_id}: {msg}")
 
-    def formatResponse(self, response: QgsServerResponse) -> None:
+    def format_response(self, response: QgsServerResponse) -> None:
         """ Format error response
         """
-        body = {'status': 'fail', 'message': self.msg}
+        body = {
+            'status': 'fail',
+            'request_id': self.request_id,
+            'message': self.msg,
+        }
         response.clear()
         write_json_response(body, response, self.code)
 
@@ -85,11 +90,13 @@ class AtlasPrintService(QgsService):
         return method in (
             QgsServerRequest.GetMethod, QgsServerRequest.PostMethod)
 
-    def executeRequest(self, request: QgsServerRequest, response: QgsServerResponse,
-                       project: QgsProject) -> None:
+    def executeRequest(
+            self, request: QgsServerRequest, response: QgsServerResponse,
+            project: QgsProject) -> None:
         """ Execute a 'ATLAS' request
         """
-
+        headers = request.headers()
+        request_id = headers.get('X-Request-Id', 'ND')
         params = request.parameters()
 
         # noinspection PyBroadException
@@ -101,7 +108,6 @@ class AtlasPrintService(QgsService):
             elif request_param == 'getprint':
 
                 # Set current Lizmap user and groups in the project before printing
-                headers = request.headers()
                 lizmap_user = get_lizmap_user_login(params, headers)
                 lizmap_group = get_lizmap_groups(params, headers)
                 custom_var = project.customVariables()
@@ -111,20 +117,21 @@ class AtlasPrintService(QgsService):
                     custom_var['lizmap_user_groups'] = list(lizmap_group)  # QGIS can't store a tuple
                     project.setCustomVariables(custom_var)
 
-                self.get_print(params, response, project, lizmap_user, lizmap_group)
+                self.get_print(params, response, project, lizmap_user, lizmap_group, request_id)
             else:
                 raise AtlasPrintError(
                     400,
-                    "Invalid REQUEST parameter: must be one of GetCapabilities, GetPrint, found '{}'".format(
-                        request_param
-                    ))
+                    f"Invalid REQUEST parameter: must be one of 'GetCapabilities', "
+                    f"'GetPrint', Request-ID {request_id}, found '{request_param}'",
+                    request_id,
+                )
 
         except AtlasPrintError as err:
-            err.formatResponse(response)
+            err.format_response(response)
         except Exception:
-            self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
-            err = AtlasPrintError(500, "Internal 'atlasprint' service error")
-            err.formatResponse(response)
+            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}, X-Request-ID {request_id}")
+            err = AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
+            err.format_response(response)
         finally:
             # Remove previous login
             self.logger.info("Removing user and group variables from the QGIS project")
@@ -155,7 +162,8 @@ class AtlasPrintService(QgsService):
             response: QgsServerResponse,
             project: QgsProject,
             lizmap_user: str,
-            lizmap_user_group: tuple
+            lizmap_user_group: tuple,
+            request_id: str,
     ) -> None:
         """ Get print document
         """
@@ -174,7 +182,7 @@ class AtlasPrintService(QgsService):
                 expression = QgsExpression(feature_filter)
                 if expression.hasParserError():
                     raise AtlasPrintException(
-                        'Expression is invalid: {}'.format(expression.parserErrorString()))
+                        f'Expression is invalid: {expression.parserErrorString()}')
 
             if scale and scales:
                 raise AtlasPrintException('SCALE and SCALES can not be used together.')
@@ -211,17 +219,19 @@ class AtlasPrintService(QgsService):
                 scale=scale,
                 scales=scales,
                 feature_filter=feature_filter,
+                request_id=request_id,
                 **additional_params
             )
         except AtlasPrintException as e:
-            raise AtlasPrintError(400, 'ATLAS - Error from the user while generating the PDF: {}'.format(e))
+            raise AtlasPrintError(
+                400, f'ATLAS - Error from the user while generating the PDF: {e}', request_id)
         except Exception:
-            self.logger.critical("Unhandled exception:\n{}".format(traceback.format_exc()))
-            raise AtlasPrintError(500, "Internal 'atlasprint' service error")
+            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
+            raise AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
 
         path = Path(output_path)
         if not path.exists():
-            raise AtlasPrintError(404, "ATLAS {} not found".format(output_format.name))
+            raise AtlasPrintError(404, f"ATLAS {output_format.name} not found", request_id)
 
         # Send PDF
         response.setHeader('Content-Type', output_format.value)
@@ -230,5 +240,5 @@ class AtlasPrintService(QgsService):
             response.write(path.read_bytes())
             path.unlink()
         except Exception:
-            self.logger.critical("Error occurred while reading {} file".format(output_format.name))
+            self.logger.critical(f"Error occurred while reading {output_format.name} file")
             raise

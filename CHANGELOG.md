@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 3.4.2 - 2025-03-25
+
+* Improve logs using `X-Request-ID` if provided in the query.
+* Add missing LICENSE file for the packaging
+
 ## 3.4.1 - 2024-05-31
 
 * Fix Python exception about PDF rasterized
