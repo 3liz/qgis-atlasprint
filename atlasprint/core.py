@@ -183,8 +183,8 @@ def print_layout(
                 settings.predefinedMapScales = scales
 
             if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
-                use_project = project.useProjectScales()
-                map_scales = project.mapScales()
+                use_project = project.viewSettings().useProjectScales()
+                map_scales = project.viewSettings().mapScales()
                 if not use_project or len(map_scales) == 0:
                     logger.info(
                         f'Request-ID {request_id}, map scales not found in project, fetching predefined map scales in '
