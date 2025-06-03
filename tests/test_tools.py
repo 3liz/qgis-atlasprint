@@ -37,21 +37,26 @@ def test_optimize_filter():
     assert "$id in ('1','2')" == optimize_expression(layer, "$id in ('1','2')")
 
     # One primary key
-    layer.primaryKeyAttributes = lambda: ['primary']
+    layer.primaryKeyAttributes = lambda: [0]
 
     assert '"primary"=3' == optimize_expression(layer, '$id=3')
     assert '"primary" in (\'1\',\'2\')' == optimize_expression(layer, "$id in ('1','2')")
 
     # Two primary keys
-    layer.primaryKeyAttributes = lambda: ['primary', 'name']
+    layer.primaryKeyAttributes = lambda: [0, 1]
     assert '$id=3' == optimize_expression(layer, '$id=3')
 
-    # One primary key but it's not integer
+    # One primary key type string
     layer = QgsVectorLayer('None?field=primary:string(20)&field=name:string(20)', 'test', 'memory')
-    layer.primaryKeyAttributes = lambda: ['primary']
-    assert '$id=3' == optimize_expression(layer, '$id=3')
+    layer.primaryKeyAttributes = lambda: [0]
+    assert '"primary"=3' == optimize_expression(layer, '$id=3')
 
     # One primary key type double
     layer = QgsVectorLayer('None?field=primary:double(20,20)&field=name:string(20)', 'test', 'memory')
-    layer.primaryKeyAttributes = lambda: ['primary']
+    layer.primaryKeyAttributes = lambda: [0]
+    assert '"primary"=3' == optimize_expression(layer, '$id=3')
+
+    # One primary key type int but not the first attribute of the layer
+    layer = QgsVectorLayer('None?field=count:integer&field=primary:integer&field=name:string(20)', 'test', 'memory')
+    layer.primaryKeyAttributes = lambda: [1]
     assert '"primary"=3' == optimize_expression(layer, '$id=3')
