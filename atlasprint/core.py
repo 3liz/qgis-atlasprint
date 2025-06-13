@@ -122,6 +122,9 @@ def print_layout(
         # PDF by default
         settings = QgsLayoutExporter.PdfExportSettings()
 
+    # Set DPI to 100
+    settings.dpi = 100
+
     atlas = None
     atlas_layout = None
     report_layout = None
