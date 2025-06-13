@@ -39,11 +39,11 @@ class Plausible:
 
     def request_stat_event(self) -> bool:
         """ Request to send an event to the API. """
-        if to_bool(os.getenv(ENV_SKIP_STATS), default_value=False):
+        if to_bool(os.getenv(ENV_SKIP_STATS)):
             # Disabled by environment variable
             return False
 
-        if to_bool(os.getenv("CI"), default_value=False):
+        if to_bool(os.getenv("CI")):
             # If running on CI, do not send stats
             return False
 
