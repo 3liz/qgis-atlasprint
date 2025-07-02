@@ -4,7 +4,8 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "cron"
+      cronjob: "0 6 5 */3 *"
     assignees:
       - "Gustry"
     ignore:
@@ -14,7 +15,8 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "cron"
+      cronjob: "0 6 5 */3 *"
     assignees:
       - "Gustry"
     ignore:
