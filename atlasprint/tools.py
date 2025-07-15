@@ -32,16 +32,13 @@ def version() -> str:
         return config["general"]["version"]
 
 
-def to_bool(val: Union[str, int, float, bool], default_value: bool = True) -> bool:
+def to_bool(val: Union[str, int, float, bool, None]) -> bool:
     """ Convert config value to boolean """
     if isinstance(val, str):
         # For string, compare lower value to True string
         return val.lower() in ('yes', 'true', 't', '1')
-    elif not val:
-        # For value like False, 0, 0.0, None, empty list or dict returns False
-        return False
     else:
-        return default_value
+        return bool(val)
 
 
 def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[str]:

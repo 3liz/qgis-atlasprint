@@ -122,6 +122,9 @@ def print_layout(
         # PDF by default
         settings = QgsLayoutExporter.PdfExportSettings()
 
+    # Set DPI to 100
+    settings.dpi = 100
+
     atlas = None
     atlas_layout = None
     report_layout = None
@@ -183,8 +186,8 @@ def print_layout(
                 settings.predefinedMapScales = scales
 
             if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
-                use_project = project.useProjectScales()
-                map_scales = project.mapScales()
+                use_project = project.viewSettings().useProjectScales()
+                map_scales = project.viewSettings().mapScales()
                 if not use_project or len(map_scales) == 0:
                     logger.info(
                         f'Request-ID {request_id}, map scales not found in project, fetching predefined map scales in '
@@ -236,10 +239,9 @@ def print_layout(
         # Default to PDF
         # PDF settings
         if atlas_layout:
-            settings.rasterizeWholeImage = to_bool(
-                atlas_layout.customProperty("rasterize", False),
-                default_value=False,
-            )
+            rasterize = to_bool(atlas_layout.customProperty("rasterize", False))
+            Logger().info(f"Request-ID {request_id}, rasterize = {rasterize}")
+            settings.rasterizeWholeImage = rasterize
         # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
         # Let's override error message

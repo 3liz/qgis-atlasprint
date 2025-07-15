@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 3.4.3 - 2025-06-13
+
+* Review and add log about rasterize option
+* Set default DPI to 100
+* Fix warning about deprecated methods about scales
+
 ## 3.4.2 - 2025-03-25
 
 * Improve logs using `X-Request-ID` if provided in the query.
