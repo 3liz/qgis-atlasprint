@@ -6,8 +6,6 @@ updates:
     schedule:
       interval: "cron"
       cronjob: "0 6 5 */3 *"
-    assignees:
-      - "Gustry"
     ignore:
       - dependency-name: "*"
         update-types: [ "version-update:semver-patch" ]
@@ -17,8 +15,6 @@ updates:
     schedule:
       interval: "cron"
       cronjob: "0 6 5 */3 *"
-    assignees:
-      - "Gustry"
     ignore:
       - dependency-name: "*"
         update-types: [ "version-update:semver-patch" ]
