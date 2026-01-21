@@ -340,17 +340,18 @@ def optimize_expression(layer, expression, request_id: str = 'ND'):
         logger.info(f"Request-ID {request_id} : $id' not found in the expression, returning the input expression.")
         return expression
 
+    # extract indexes of primary keys
     primary_keys = layer.primaryKeyAttributes()
     if len(primary_keys) != 1:
         logger.info(f"Request-ID {request_id} : Primary keys are not defined in the layer '{layer.id()}'.")
         return expression
 
-    field = layer.fields().at(0)
-    if not field.isNumeric():
-        logger.info(f"Request-ID {request_id} : The field '{field.name()}' is not numeric in layer '{layer.id()}'.")
-        return expression
+    # extract primary key from fields list
+    pk_index = primary_keys[0]
+    pk_field = layer.fields().at(pk_index)
 
-    expression = expression.replace('$id', f'"{field.name()}"')
-    logger.info(f'Request-ID {request_id} : $id has been replaced by "{field.name()}" in layer "{layer.id()}"')
+    # replace `$id` with effective PK name
+    expression = expression.replace('$id', f'"{pk_field.name()}"')
+    logger.info(f'Request-ID {request_id} : $id has been replaced by "{pk_field.name()}" in layer "{layer.id()}"')
 
     return expression
