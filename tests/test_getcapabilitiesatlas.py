@@ -1,16 +1,12 @@
 import json
-import logging
 
-LOGGER = logging.getLogger('server')
 
-__copyright__ = 'Copyright 2021, 3Liz'
-__license__ = 'GPL version 3'
-__email__ = 'info@3liz.org'
+from .core.client import Client
 
 PROJECT_FILE = 'no_atlas.qgs'
 
 
-def test_atlas_metadata(client):
+def test_atlas_metadata(client: Client):
     """ Test plugin metadata using service WMS and ATLAS. """
     urls = [
         '?SERVICE=ATLAS&REQUEST=GetCapabilities&MAP={}'.format(PROJECT_FILE),

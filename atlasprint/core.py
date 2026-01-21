@@ -5,7 +5,7 @@ import unicodedata
 
 from enum import Enum
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 from uuid import uuid4
 
 from qgis.core import (
@@ -18,15 +18,12 @@ from qgis.core import (
     QgsMasterLayoutInterface,
     QgsProject,
     QgsSettings,
+    QgsVectorLayer,
 )
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
 
 from .logger import Logger
 from .tools import to_bool
-
-__copyright__ = 'Copyright 2021, 3Liz'
-__license__ = 'GPL version 3'
-__email__ = 'info@3liz.org'
 
 
 class OutputFormat(Enum):
@@ -69,12 +66,12 @@ def print_layout(
     project: QgsProject,
     layout_name: str,
     output_format: OutputFormat,
-    feature_filter: str = None,
-    scales: list = None,
-    scale: int = None,
+    feature_filter: Optional[str] = None,
+    scales: Optional[list] = None,
+    scale: Optional[int] = None,
     request_id: str = '',
-    **additional_params
-):
+    **additional_params,
+) -> Path:
     """Generate a PDF for an atlas or a report.
 
     :param project: The QGIS project.
@@ -135,9 +132,9 @@ def print_layout(
         )
 
     if master_layout.layoutType() == QgsMasterLayoutInterface.PrintLayout:
-        for _print_layout in manager.printLayouts():
-            if _print_layout.name() == layout_name:
-                atlas_layout = _print_layout
+        for pr_layout in manager.printLayouts():
+            if pr_layout.name() == layout_name:
+                atlas_layout = pr_layout
                 break
 
         atlas = atlas_layout.atlas()
@@ -267,37 +264,36 @@ def print_layout(
     return export_path
 
 
-def result_message(error) -> str:
+def result_message(error: QgsLayoutExporter.ExportResult) -> str:
     """ Error message according to the enumeration. """
     if error == QgsLayoutExporter.Success:
         return 'Success'
-    elif error == QgsLayoutExporter.Canceled:
+    if error == QgsLayoutExporter.Canceled:
         return 'Canceled'
-    elif error == QgsLayoutExporter.MemoryError:
+    if error == QgsLayoutExporter.MemoryError:
         return 'Memory error'
-    elif error == QgsLayoutExporter.FileError:
+    if error == QgsLayoutExporter.FileError:
         return 'File error'
-    elif error == QgsLayoutExporter.PrintError:
+    if error == QgsLayoutExporter.PrintError:
         return 'Print error'
-    elif error == QgsLayoutExporter.SvgLayerError:
+    if error == QgsLayoutExporter.SvgLayerError:
         return 'SVG layer error'
-    elif error == QgsLayoutExporter.IteratorError:
+    if error == QgsLayoutExporter.IteratorError:
         return 'Iterator error'
-    else:
-        Logger().critical(
+
+    Logger().critical(
             f"Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : {error}"
-        )
-        return f'Unknown error : {error}'
+    )
+    return f'Unknown error : {error}'
 
 
-def clean_string(input_string) -> str:
+def clean_string(input_string: str) -> str:
     """ Clean a string to be used as a file name """
     input_string = "".join([c for c in input_string if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
     nfkd_form = unicodedata.normalize('NFKD', input_string)
     only_ascii = nfkd_form.encode('ASCII', 'ignore')
     only_ascii = only_ascii.decode('ASCII')
-    only_ascii = only_ascii.replace(' ', '_')
-    return only_ascii
+    return only_ascii.replace(' ', '_')
 
 
 def parse_output_format(output: Union[str, None]) -> OutputFormat:
@@ -312,16 +308,16 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
     if output == '':
         return OutputFormat.Pdf
 
-    elif output in ('pdf', 'application/pdf'):
+    if output in ('pdf', 'application/pdf'):
         return OutputFormat.Pdf
 
-    elif output in ('image/png', 'png'):
+    if output in ('image/png', 'png'):
         return OutputFormat.Png
 
-    elif output in ('image/jpeg', 'jpeg', 'jpg'):
+    if output in ('image/jpeg', 'jpeg', 'jpg'):
         return OutputFormat.Jpeg
 
-    elif output in ('svg', 'image/svg', 'image/svg+xml'):
+    if output in ('svg', 'image/svg', 'image/svg+xml'):
         Logger().info('SVG is not well supported. Default to PDF')
         return OutputFormat.Pdf
 
@@ -330,7 +326,11 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
     return OutputFormat.Pdf
 
 
-def optimize_expression(layer, expression, request_id: str = 'ND'):
+def optimize_expression(
+    layer: QgsVectorLayer,
+    expression: str,
+    request_id: str = 'ND',
+) -> str:
     """Check if we can optimize the expression.
 
     https://github.com/3liz/qgis-atlasprint/issues/23

@@ -3,10 +3,6 @@
 
 from qgis.core import QgsVectorLayer
 
-__copyright__ = 'Copyright 2021, 3Liz'
-__license__ = 'GPL version 3'
-__email__ = 'info@3liz.org'
-
 
 def test_global_scales():
     """Test we can fetch global scales from INI file or hardcoded scales."""
@@ -32,26 +28,26 @@ def test_optimize_filter():
     # No primary key
     layer = QgsVectorLayer('None?field=primary:integer&field=name:string(20)', 'test', 'memory')
 
-    assert 'abc' == optimize_expression(layer, 'abc')
-    assert '$id=3' == optimize_expression(layer, '$id=3')
-    assert "$id in ('1','2')" == optimize_expression(layer, "$id in ('1','2')")
+    assert optimize_expression(layer, 'abc') == 'abc'
+    assert optimize_expression(layer, '$id=3') == '$id=3'
+    assert optimize_expression(layer, "$id in ('1','2')") == "$id in ('1','2')"
 
     # One primary key
     layer.primaryKeyAttributes = lambda: ['primary']
 
-    assert '"primary"=3' == optimize_expression(layer, '$id=3')
-    assert '"primary" in (\'1\',\'2\')' == optimize_expression(layer, "$id in ('1','2')")
+    assert optimize_expression(layer, '$id=3') == '"primary"=3'
+    assert optimize_expression(layer, "$id in ('1','2')") == '"primary" in (\'1\',\'2\')'
 
     # Two primary keys
     layer.primaryKeyAttributes = lambda: ['primary', 'name']
-    assert '$id=3' == optimize_expression(layer, '$id=3')
+    assert optimize_expression(layer, '$id=3') == '$id=3'
 
     # One primary key but it's not integer
     layer = QgsVectorLayer('None?field=primary:string(20)&field=name:string(20)', 'test', 'memory')
     layer.primaryKeyAttributes = lambda: ['primary']
-    assert '$id=3' == optimize_expression(layer, '$id=3')
+    assert optimize_expression(layer, '$id=3') == '$id=3'
 
     # One primary key type double
     layer = QgsVectorLayer('None?field=primary:double(20,20)&field=name:string(20)', 'test', 'memory')
     layer.primaryKeyAttributes = lambda: ['primary']
-    assert '"primary"=3' == optimize_expression(layer, '$id=3')
+    assert optimize_expression(layer, '$id=3') == '"primary"=3'

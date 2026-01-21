@@ -37,8 +37,8 @@ def to_bool(val: Union[str, int, float, bool, None]) -> bool:
     if isinstance(val, str):
         # For string, compare lower value to True string
         return val.lower() in ('yes', 'true', 't', '1')
-    else:
-        return bool(val)
+
+    return bool(val)
 
 
 def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[str]:

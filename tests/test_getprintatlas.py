@@ -1,19 +1,14 @@
 import json
-import logging
 
 from qgis.core import Qgis
 
-LOGGER = logging.getLogger('server')
-
-__copyright__ = 'Copyright 2021, 3Liz'
-__license__ = 'GPL version 3'
-__email__ = 'info@3liz.org'
+from .core.client import Client
 
 PROJECT_NO_ATLAS = 'no_atlas.qgs'
 PROJECT_ATLAS_SIMPLE = 'atlas_simple.qgs'
 
 
-def test_no_template(client):
+def test_no_template(client: Client):
     """Test missing template name."""
     qs = '?SERVICE=ATLAS&REQUEST=GetPrint&MAP={}'.format(PROJECT_ATLAS_SIMPLE)
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
@@ -24,7 +19,7 @@ def test_no_template(client):
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: TEMPLATE is required'
 
 
-def test_no_exp_filter(client):
+def test_no_exp_filter(client: Client):
     """ Test without EXP_FILTER. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -40,7 +35,7 @@ def test_no_exp_filter(client):
         'atlas layout `layout1-atlas`')
 
 
-def test_invalid_exp_filter(client):
+def test_invalid_exp_filter(client: Client):
     """ Test with an invalid EXP_FILTER (not well-formed). """
     qs = (
         '?SERVICE=ATLAS&'
@@ -62,7 +57,7 @@ def test_invalid_exp_filter(client):
     assert b['message'] == message
 
 
-def test_invalid_exp_filter_field(client):
+def test_invalid_exp_filter_field(client: Client):
     """ Test with an invalid EXP_FILTER (unknown field). """
     qs = (
         '?SERVICE=ATLAS&'
@@ -81,7 +76,7 @@ def test_invalid_exp_filter_field(client):
         '{} \'fakeId\' not found'.format(field))
 
 
-def test_invalid_template(client):
+def test_invalid_template(client: Client):
     """ Make a failed request with invalid TEMPLATE (unknown layout). """
     qs = (
         '?SERVICE=ATLAS&'
@@ -98,7 +93,7 @@ def test_invalid_template(client):
         'ATLAS - Error from the user while generating the PDF: Request-ID ND, layout `Fakelayout1-atlas` not found')
 
 
-def test_invalid_scale_and_scales(client):
+def test_invalid_scale_and_scales(client: Client):
     """ Test that SCALE and SCALES can not be used together."""
     qs = (
         '?SERVICE=ATLAS&'
@@ -116,7 +111,7 @@ def test_invalid_scale_and_scales(client):
         'ATLAS - Error from the user while generating the PDF: SCALE and SCALES can not be used together.')
 
 
-def test_invalid_scale(client):
+def test_invalid_scale(client: Client):
     """ Make a failed request with invalid SCALE. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -133,7 +128,7 @@ def test_invalid_scale(client):
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Invalid number in SCALE.'
 
 
-def test_invalid_scales(client):
+def test_invalid_scales(client: Client):
     """ Test a failed request with invalid SCALES. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -150,7 +145,7 @@ def test_invalid_scales(client):
     assert b['message'] == 'ATLAS - Error from the user while generating the PDF: Invalid number in SCALES.'
 
 
-def test_invalid_atlas_layout(client):
+def test_invalid_atlas_layout(client: Client):
     """ Test a failed request on a project without atlas layout. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -168,7 +163,7 @@ def test_invalid_atlas_layout(client):
         'ATLAS - Error from the user while generating the PDF: Request-ID ND, layout `layout-no-atlas` not found')
 
 
-def test_valid_getprint_atlas_pdf(client):
+def test_valid_getprint_atlas_pdf(client: Client):
     """ Test Atlas GetPrint response for atlas as PDF. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -184,7 +179,7 @@ def test_valid_getprint_atlas_pdf(client):
     assert rv.headers.get('Content-Type', '').find('application/pdf') == 0
 
 
-def test_valid_getprint_atlas_png(client):
+def test_valid_getprint_atlas_png(client: Client):
     """ Test Atlas GetPrint response for atlas as PNG. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -199,7 +194,7 @@ def test_valid_getprint_atlas_png(client):
     assert rv.headers.get('Content-Type', '') == 'image/png'
 
 
-def test_valid_getprint_atlas_svg(client):
+def test_valid_getprint_atlas_svg(client: Client):
     """ Test Atlas GetPrint response for atlas as SVG. """
     # Default to PDF, not sure about the broken SVG for now ...
     qs = (
@@ -215,7 +210,7 @@ def test_valid_getprint_atlas_svg(client):
     assert rv.headers.get('Content-Type', '') == 'application/pdf'
 
 
-def test_valid_getprint_atlas_jpeg(client):
+def test_valid_getprint_atlas_jpeg(client: Client):
     """ Test Atlas GetPrint response for atlas as JPEG. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -230,7 +225,7 @@ def test_valid_getprint_atlas_jpeg(client):
     assert rv.headers.get('Content-Type', '') == 'image/jpeg'
 
 
-def test_valid_get_print_atlas_accent(client):
+def test_valid_get_print_atlas_accent(client: Client):
     """ Test Atlas GetPrint with some accents and spaces in the layout name. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -244,13 +239,14 @@ def test_valid_get_print_atlas_accent(client):
     assert rv.headers.get('Content-Type', '') == 'application/pdf'
 
 
-def test_valid_getprint_report(client):
+def test_valid_getprint_report(client: Client):
     """ Test Atlas GetPrint response for report. """
     qs = (
         '?SERVICE=ATLAS&'
         'REQUEST=GetPrint&'
         'MAP={}&'
-        'TEMPLATE=layout2-report&'.format(PROJECT_ATLAS_SIMPLE))
+        'TEMPLATE=layout2-report&'.format(PROJECT_ATLAS_SIMPLE)
+    )
     rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
     assert rv.status_code == 200
 
