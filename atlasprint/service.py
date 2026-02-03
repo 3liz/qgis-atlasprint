@@ -169,7 +169,7 @@ class AtlasPrintService(QgsService):
         """
 
         template = params.get('TEMPLATE')
-        feature_filter = params.get('EXP_FILTER', None)
+        feature_filter = params.get('EXP_FILTER')
         scale = params.get('SCALE')
         scales = params.get('SCALES')
         output_format = parse_output_format(params.get('FORMAT', params.get('format')))

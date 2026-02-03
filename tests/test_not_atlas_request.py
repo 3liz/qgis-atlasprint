@@ -2,14 +2,12 @@
 
 import json
 
-__copyright__ = 'Copyright 2021, 3Liz'
-__license__ = 'GPL version 3'
-__email__ = 'info@3liz.org'
+from .core.client import Client
 
 PROJECT_FILE = 'no_atlas.qgs'
 
 
-def test_not_supported_request(client):
+def test_not_supported_request(client: Client):
     """Test not supported GetCapabilities."""
     # Make a request
     qs = '?SERVICE=ATLAS&REQUEST=Get&MAP={}'.format(PROJECT_FILE)

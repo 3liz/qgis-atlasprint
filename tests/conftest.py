@@ -1,28 +1,20 @@
-import configparser
-import glob
-import logging
 import os
 import sys
 import warnings
 
-import lxml.etree
+
+from pathlib import Path
+from typing import (
+    Any,
+    Optional,
+)
+
 import pytest
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from osgeo import gdal
 
 from qgis.PyQt import Qt
 
-logging.basicConfig(stream=sys.stderr)
-logging.disable(logging.NOTSET)
-
-LOGGER = logging.getLogger('server')
-LOGGER.setLevel(logging.DEBUG)
-
-from typing import Any, Dict, Generator
-
-from qgis.core import Qgis, QgsApplication, QgsFontUtils, QgsProject
+from qgis.core import Qgis, QgsFontUtils, QgsProject
 from qgis.server import (
     QgsBufferServerRequest,
     QgsBufferServerResponse,
@@ -30,254 +22,115 @@ from qgis.server import (
     QgsServerRequest,
 )
 
-qgis_application = None
+from .core.qgis import load_server_plugin, install_logger_hook
+from .core.client import OWSResponse, Client
+
+PLUGIN_SOURCE = "atlasprint"
 
 
-def pytest_addoption(parser):
-    parser.addoption("--qgis-plugins", metavar="PATH", help="Plugin path", default=None)
-
-
-plugin_path = None
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from osgeo import gdal
 
 
 def pytest_report_header(config):
-    message = 'QGIS : {}\n'.format(Qgis.QGIS_VERSION_INT)
-    message += 'Python GDAL : {}\n'.format(gdal.VersionInfo('VERSION_NUM'))
-    message += 'Python : {}\n'.format(sys.version)
-    # message += 'Python path : {}'.format(sys.path)
-    message += 'QT : {}'.format(Qt.QT_VERSION_STR)
-    return message
+    return (
+        f"QGIS : {Qgis.QGIS_VERSION_INT}\n"
+        f"Python GDAL : {gdal.VersionInfo('VERSION_NUM')}\n"
+        f"Python : {sys.version}\n"
+        f"QT : {Qt.QT_VERSION_STR}"
+    )
 
 
-def pytest_configure(config):
-    global plugin_path
-    plugin_path = config.getoption('qgis_plugins')
+def pytest_sessionstart(session: pytest.Session):
+    """Start qgis application"""
+    install_logger_hook()
 
 
-def pytest_sessionstart(session):
-    """ Start qgis application
-    """
-    global qgis_application
-    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
-
-    # Define this in global environment
-    # os.environ['QGIS_DISABLE_MESSAGE_HOOKS'] = 1
-    # os.environ['QGIS_NO_OVERRIDE_IMPORT'] = 1
-    qgis_application = QgsApplication([], False)
-    qgis_application.initQgis()
-
-    # Install logger hook
-    install_logger_hook(verbose=True)
+@pytest.fixture(scope="session")
+def rootdir(request: pytest.FixtureRequest) -> Path:
+    return request.config.rootpath
 
 
-def pytest_sessionfinish(session, exitstatus):
-    """ End qgis session
-    """
-    global qgis_application
-    qgis_application.exitQgis()
-    del qgis_application
+@pytest.fixture(scope="session")
+def data(rootdir: Path) -> Path:
+    return rootdir.joinpath("data")
 
 
-NAMESPACES = {
-    'xlink': "http://www.w3.org/1999/xlink",
-    'wms': "http://www.opengis.net/wms",
-    'wfs': "http://www.opengis.net/wfs",
-    'wcs': "http://www.opengis.net/wcs",
-    'ows': "http://www.opengis.net/ows/1.1",
-    'gml': "http://www.opengis.net/gml",
-    'xsi': "http://www.w3.org/2001/XMLSchema-instance"
-}
+@pytest.fixture(scope="session")
+def output_dir(rootdir: Path) -> Path:
+    outdir = rootdir.joinpath("__output__")
+    outdir.mkdir(exist_ok=True)
+    return outdir
 
 
-class OWSResponse:
-
-    def __init__(self, resp: QgsBufferServerResponse) -> None:
-        self._resp = resp
-        self._xml = None
-
-    @property
-    def xml(self) -> 'xml':
-        if self._xml is None and self._resp.headers().get('Content-Type', '').find('text/xml') == 0:
-            self._xml = lxml.etree.fromstring(self.content.decode('utf-8'))
-        return self._xml
-
-    @property
-    def content(self) -> bytes:
-        return bytes(self._resp.body())
-
-    @property
-    def status_code(self) -> int:
-        return self._resp.statusCode()
-
-    @property
-    def headers(self) -> Dict[str, str]:
-        return self._resp.headers()
-
-    def xpath(self, path: str) -> lxml.etree.Element:
-        assert self.xml is not None
-        return self.xml.xpath(path, namespaces=NAMESPACES)
-
-    def xpath_text(self, path: str) -> str:
-        assert self.xml is not None
-        return ' '.join(e.text for e in self.xpath(path))
+@pytest.fixture(scope="session")
+def server(request: pytest.FixtureRequest) -> QgsServer:
+    QgsFontUtils.loadStandardTestFonts(["All"])
+    return QgsServer()
 
 
-@pytest.fixture(scope='session')
-def client(request):
-    """ Return a qgis server instance
-    """
+@pytest.fixture(autouse=True, scope="session")
+def plugin(rootdir: Path, server: QgsServer) -> Any:
+    plugin_path = rootdir.parent.joinpath(PLUGIN_SOURCE)
+    plugin = load_server_plugin(plugin_path, server.serverInterface())
+
+    yield plugin
+
+
+# Requests
+
+
+@pytest.fixture(scope="session")
+def client(data: Path, output_dir: Path, plugin: Any, server: QgsServer) -> Client:
+    """Return a qgis server instance"""
+
     class _Client:
-
         def __init__(self) -> None:
-            # noinspection PyArgumentList
-            self.fontFamily = QgsFontUtils.standardTestFontFamily()
-            # noinspection PyCallByClass,PyArgumentList
-            QgsFontUtils.loadStandardTestFonts(['All'])
-
             # Activate debug headers
-            os.environ['QGIS_WMTS_CACHE_DEBUG_HEADERS'] = 'true'
+            os.environ["QGIS_WMTS_CACHE_DEBUG_HEADERS"] = "true"
 
-            self.datapath = request.config.rootdir.join('data')
-            self.server = QgsServer()
+        @property
+        def plugin(self) -> Any:
+            """retourne l'instance du plugin"""
+            return plugin
 
-            # Load plugins
-            load_plugins(self.server.serverInterface())
+        def get_project_path(self, name: str) -> Path:
+            return data.joinpath(name)
 
-        def getplugin(self, name) -> Any:
-            """ retourne l'instance du plugin
-            """
-            return server_plugins.get(name)
+        def get_project(self, name: str) -> Optional[QgsProject]:
+            projectpath = self.get_project_path(name)
+            assert projectpath.exists()
+            qgsproject = QgsProject(capabilities=Qgis.ProjectCapabilities())
+            if qgsproject.read(str(projectpath)):
+                return qgsproject
 
-        def getprojectpath(self, name: str) -> str:
-            return self.datapath.join(name)
+            return None
 
-        def get(self, query: str, project: str=None) -> OWSResponse:
-            """ Return server response from query
-            """
-            request = QgsBufferServerRequest(query, QgsServerRequest.GetMethod, {}, None)
+        def get(
+            self,
+            query: str,
+            project: Optional[str] = None,
+            headers: Optional[dict[str, str]] = None,
+        ) -> OWSResponse:
+            """Return server response from query"""
+            if headers is None:
+                headers = {}
+
+            request = QgsBufferServerRequest(
+                query,
+                QgsServerRequest.GetMethod,
+                headers,
+                None,
+            )
             response = QgsBufferServerResponse()
-            if project is not None and not os.path.isabs(project):
-                projectpath = self.datapath.join(project)
-                qgsproject = QgsProject()
-                if not qgsproject.read(projectpath.strpath):
-                    raise ValueError("Error reading project '%s':" % projectpath.strpath)
+            if project is not None:
+                qgsproject = self.get_project(project)
+                if not qgsproject:
+                    raise ValueError(f"Error reading project '{project}':")
             else:
                 qgsproject = None
-            self.server.handleRequest(request, response, project=qgsproject)
-            return OWSResponse(response)
+            server.handleRequest(request, response, project=qgsproject)
+            return OWSResponse(response, output_dir)
 
     return _Client()
-
-
-## 
-## Plugins
-##
-
-def checkQgisVersion(minver: str, maxver: str) -> bool:
-
-    def to_int(ver):
-        major, *ver = ver.split('.')
-        major = int(major)
-        minor = int(ver[0]) if len(ver) > 0 else 0
-        rev = int(ver[1]) if len(ver) > 1 else 0
-        if minor >= 99:
-            minor = rev = 0
-            major += 1
-        if rev > 99:
-            rev = 99
-        return int("{:d}{:02d}{:02d}".format(major,minor,rev))
-
-
-    version = to_int(Qgis.QGIS_VERSION.split('-')[0])
-    minver = to_int(minver) if minver else version
-    maxver = to_int(maxver) if maxver else version
-    return minver <= version <= maxver
-
-
-def find_plugins(pluginpath: str) -> Generator[str,None,None]:
-    """ Load plugins
-    """
-    for plugin in glob.glob(os.path.join(plugin_path + "/*")):
-        if not os.path.exists(os.path.join(plugin, '__init__.py')):
-            continue
-
-        metadatafile = os.path.join(plugin, 'metadata.txt')
-        if not os.path.exists(metadatafile):
-            continue
-
-        cp = configparser.ConfigParser()
-        try:
-            with open(metadatafile, mode='rt') as f:
-                cp.read_file(f)
-            if not cp['general'].getboolean('server'):
-                logging.critical("%s is not a server plugin", plugin)
-                continue
-
-            minver = cp['general'].get('qgisMinimumVersion')
-            maxver = cp['general'].get('qgisMaximumVersion')
-        except Exception as exc:
-            LOGGER.critical("Error reading plugin metadata '%s': %s", metadatafile, exc)
-            continue
-
-        if not checkQgisVersion(minver, maxver):
-            LOGGER.critical(
-                ("Unsupported version for %s:"
-                 "\n MinimumVersion: %s"
-                 "\n MaximumVersion: %s"
-                 "\n Qgis version: %s"
-                 "\n Discarding") % (
-                    plugin, minver, maxver, Qgis.QGIS_VERSION.split('-')[0]))
-            continue
-
-        yield os.path.basename(plugin)        
-
-
-server_plugins = {}
-
-
-def load_plugins(serverIface: 'QgsServerInterface') -> None:
-    """ Start all plugins
-    """
-    if not plugin_path:
-        return
-
-    LOGGER.info("Initializing plugins from %s", plugin_path)
-    sys.path.append(plugin_path)
-
-    for plugin in find_plugins(plugin_path):
-        try:
-            __import__(plugin)
-
-            package = sys.modules[plugin]
-
-            # Initialize the plugin
-            server_plugins[plugin] = package.serverClassFactory(serverIface)
-            LOGGER.info("Loaded plugin %s", plugin)
-        except:
-            LOGGER.error("Error loading plugin %s", plugin)
-            raise
-
-
-#
-# Logger hook
-#
-
-def install_logger_hook( verbose: bool=False ) -> None:
-    """ Install message log hook
-    """
-    from qgis.core import Qgis, QgsApplication
-
-    # Add a hook to qgis  message log
-    def writelogmessage(message, tag, level):
-        arg = '{}: {}'.format(tag, message)
-        if level == Qgis.Warning:
-            LOGGER.warning(arg)
-        elif level == Qgis.Critical:
-            LOGGER.error(arg)
-        elif verbose:
-            # Qgis is somehow very noisy
-            # log only if verbose is set
-            LOGGER.info(arg)
-
-    messageLog = QgsApplication.messageLog()
-    messageLog.messageReceived.connect(writelogmessage)
