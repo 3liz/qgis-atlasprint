@@ -23,7 +23,6 @@ REQUIREMENT_GROUPS= \
 	dev \
 	tests \
 	lint \
-	packaging \
 	$(NULL)
 
 .PHONY: update-requirements
