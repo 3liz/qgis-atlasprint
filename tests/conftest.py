@@ -12,7 +12,7 @@ from typing import (
 import pytest
 
 
-from qgis.PyQt import Qt
+from qgis.PyQt.QtCore import QT_VERSION_STR
 
 from qgis.core import Qgis, QgsFontUtils, QgsProject
 from qgis.server import (
@@ -22,7 +22,7 @@ from qgis.server import (
     QgsServerRequest,
 )
 
-from .core.qgis import load_server_plugin, install_logger_hook
+from .core.qgis import QGIS_VERSION_INT, load_server_plugin, install_logger_hook
 from .core.client import OWSResponse, Client
 
 PLUGIN_SOURCE = "atlasprint"
@@ -35,10 +35,10 @@ with warnings.catch_warnings():
 
 def pytest_report_header(config):
     return (
-        f"QGIS : {Qgis.QGIS_VERSION_INT}\n"
+        f"QGIS : {QGIS_VERSION_INT}\n"
         f"Python GDAL : {gdal.VersionInfo('VERSION_NUM')}\n"
         f"Python : {sys.version}\n"
-        f"QT : {Qt.QT_VERSION_STR}"
+        f"QT : {QT_VERSION_STR}"
     )
 
 
