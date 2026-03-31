@@ -14,6 +14,11 @@
 *   (at your option) any later version.                                   *
 *                                                                         *
 ***************************************************************************
+
+__copyright__ = 'Copyright 2021, 3Liz'
+__license__ = 'GPL version 3'
+__email__ = 'info@3liz.org'
+
 """
 
 import json
@@ -27,13 +32,9 @@ from qgis.server import QgsServerRequest, QgsServerResponse, QgsService
 from qgis.utils import pluginMetadata
 
 from .core import AtlasPrintException, parse_output_format, print_layout
-from .logger import Logger
 from .tools import get_lizmap_groups, get_lizmap_user_login
 
-__copyright__ = 'Copyright 2021, 3Liz'
-__license__ = 'GPL version 3'
-__email__ = 'info@3liz.org'
-
+from .import logger
 
 def write_json_response(data: Dict[str, str], response: QgsServerResponse, code: int = 200) -> None:
     """ Write data as json response
@@ -50,7 +51,7 @@ class AtlasPrintError(Exception):
         self.msg = msg
         self.code = code
         self.request_id = request_id
-        Logger().critical(f"Atlas print request error {code}, X-Request-ID {request_id}: {msg}")
+        logger.critical(f"Atlas print request error {code}, X-Request-ID {request_id}: {msg}")
 
     def format_response(self, response: QgsServerResponse) -> None:
         """ Format error response
@@ -69,7 +70,6 @@ class AtlasPrintService(QgsService):
     def __init__(self, debug: bool = False) -> None:
         super().__init__()
         _ = debug
-        self.logger = Logger()
 
     # QgsService inherited
 
@@ -112,7 +112,7 @@ class AtlasPrintService(QgsService):
                 lizmap_group = get_lizmap_groups(params, headers)
                 custom_var = project.customVariables()
                 if custom_var.get('lizmap_user', None) != lizmap_user:
-                    self.logger.info("Adding user and group variables in the QGIS project")
+                    logger.info("Adding user and group variables in the QGIS project")
                     custom_var['lizmap_user'] = lizmap_user
                     custom_var['lizmap_user_groups'] = list(lizmap_group)  # QGIS can't store a tuple
                     project.setCustomVariables(custom_var)
@@ -129,12 +129,12 @@ class AtlasPrintService(QgsService):
         except AtlasPrintError as err:
             err.format_response(response)
         except Exception:
-            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}, X-Request-ID {request_id}")
+            logger.critical(f"Unhandled exception:\n{traceback.format_exc()}, X-Request-ID {request_id}")
             err = AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
             err.format_response(response)
         finally:
             # Remove previous login
-            self.logger.info("Removing user and group variables from the QGIS project")
+            logger.info("Removing user and group variables from the QGIS project")
             custom_var = project.customVariables()
             custom_var.pop('lizmap_user', None)
             custom_var.pop('lizmap_user_groups', None)
@@ -226,7 +226,7 @@ class AtlasPrintService(QgsService):
             raise AtlasPrintError(
                 400, f'ATLAS - Error from the user while generating the PDF: {e}', request_id)
         except Exception:
-            self.logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
+            logger.critical(f"Unhandled exception:\n{traceback.format_exc()}")
             raise AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
 
         path = Path(output_path)
@@ -240,5 +240,5 @@ class AtlasPrintService(QgsService):
             response.write(path.read_bytes())
             path.unlink()
         except Exception:
-            self.logger.critical(f"Error occurred while reading {output_format.name} file")
+            logger.critical(f"Error occurred while reading {output_format.name} file")
             raise

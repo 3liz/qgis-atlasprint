@@ -26,8 +26,8 @@ dev = [
     {include-group = "lint"},
 ]
 tests = [
-    "pytest >= 5.3",
-    "pytest-qgis",
+    "pytest",
+    "pytest-qgis; python_full_version >= '3.10'",
     "semver",
     "lxml",
 ]
@@ -39,7 +39,7 @@ lint = [
 ]
 
 [tool.uv.sources]
-pytest-qgis = { git = "https://github.com/3liz/pytest-qgis.git" }
+pytest-qgis = { git = "https://github.com/3liz/pytest-qgis.git", branch = "v3" }
 
 # Ruff configuration
 # See https://doc.astral.sh/ruff/configuration

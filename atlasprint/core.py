@@ -22,8 +22,8 @@ from qgis.core import (
 )
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
 
-from .logger import Logger
 from .tools import to_bool
+from . import logger
 
 
 class OutputFormat(Enum):
@@ -99,7 +99,6 @@ def print_layout(
     :return: Path to the PDF.
     :rtype: basestring
     """
-    logger = Logger()
 
     canvas = QgsMapCanvas()
     bridge = QgsLayerTreeMapCanvasBridge(
@@ -195,12 +194,11 @@ def print_layout(
 
     elif master_layout.layoutType() == QgsMasterLayoutInterface.Report:
         report_layout = master_layout
-
     else:
         raise AtlasPrintException(f'Request-ID {request_id}, the layout is not supported by the plugin')
 
     if atlas_layout:
-        Logger().info(
+        logger.info(
             f"Request-ID {request_id}, checking for additional parameters to set in the layout before printing…"
         )
         for key, value in additional_params.items():
@@ -217,12 +215,12 @@ def print_layout(
                     f'Additional parameter "{key.lower()}" has not been found in the layout, the value was "{value}", '
                     f'skipping'
                 )
-        Logger().info(f"Request-ID {request_id}, end of additional parameters")
+        logger.info(f"Request-ID {request_id}, end of additional parameters")
 
     file_name = f'{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}'
     export_path = Path(tempfile.gettempdir()).joinpath(file_name)
 
-    Logger().info(f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}")
+    logger.info(f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}")
 
     if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
         exporter = QgsLayoutExporter(atlas_layout or report_layout)
@@ -237,7 +235,7 @@ def print_layout(
         # PDF settings
         if atlas_layout:
             rasterize = to_bool(atlas_layout.customProperty("rasterize", False))
-            Logger().info(f"Request-ID {request_id}, rasterize = {rasterize}")
+            logger.info(f"Request-ID {request_id}, rasterize = {rasterize}")
             settings.rasterizeWholeImage = rasterize
         # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
@@ -245,7 +243,7 @@ def print_layout(
         _ = error
         error = result_message(result)
 
-    Logger().info(f"Request-ID {request_id}, export done, result {result_message(result)}")
+    logger.info(f"Request-ID {request_id}, export done, result {result_message(result)}")
 
     if result != QgsLayoutExporter.Success:
         raise AtlasPrintException(
@@ -281,7 +279,7 @@ def result_message(error: QgsLayoutExporter.ExportResult) -> str:
     if error == QgsLayoutExporter.IteratorError:
         return 'Iterator error'
 
-    Logger().critical(
+    logger.critical(
             f"Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : {error}"
     )
     return f'Unknown error : {error}'
@@ -318,11 +316,11 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
         return OutputFormat.Jpeg
 
     if output in ('svg', 'image/svg', 'image/svg+xml'):
-        Logger().info('SVG is not well supported. Default to PDF')
+        logger.info('SVG is not well supported. Default to PDF')
         return OutputFormat.Pdf
 
     # Default value
-    Logger().info(f'Output format is invalid, default to PDF. It was "{output}"')
+    logger.info(f'Output format is invalid, default to PDF. It was "{output}"')
     return OutputFormat.Pdf
 
 
@@ -335,7 +333,6 @@ def optimize_expression(
 
     https://github.com/3liz/qgis-atlasprint/issues/23
     """
-    logger = Logger()
     if expression.find('$id') < 0:
         logger.info(f"Request-ID {request_id} : $id' not found in the expression, returning the input expression.")
         return expression

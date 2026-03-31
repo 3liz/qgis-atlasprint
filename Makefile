@@ -15,7 +15,7 @@ ifdef VIRTUAL_ENV
 # Always prefer active environment
 ACTIVE_VENV=--active
 endif
-RUN=uv run $(ACTIVE_VENV)
+UV=uv run $(ACTIVE_VENV)
 endif
 
 
@@ -49,34 +49,38 @@ requirements/%.txt: uv.lock
 LINT_TARGETS=$(PYTHON_PKG) $(EXTRA_LINT_TARGETS)
 
 lint::
-	@ $(RUN) ruff check --preview --output-format=concise $(LINT_TARGETS)
+	@ $(UV) ruff check --output-format=concise $(LINT_TARGETS)
 
 lint::
-	@ $(RUN) ruff check --preview \
-		--output-format=concise \
+	@ $(UV) ruff check --output-format=concise \
 		--target-version=py310 \
 		tests
 
-lint-fix::
-	@ $(RUN) ruff check --preview --fix $(LINT_TARGETS)
+lint:: typecheck
+
+lint-preview:
+	@ $(UV) ruff check --preview --output-format=concise  $(LINT_TARGETS)
 
 lint-fix::
-	@ $(RUN) ruff check --preview --fix --target-version=py310 tests
+	@ $(UV) ruff check --fix $(LINT_TARGETS)
+
+lint-fix::
+	@ $(UV) ruff check --fix --target-version=py310 tests
 
 format::
-	@ $(RUN) ruff format $(LINT_TARGETS)
+	@ $(UV) ruff format $(LINT_TARGETS)
 
 format::
-	@ $(RUN) ruff format --target-version=py310 tests
+	@ $(UV) ruff format --target-version=py310 tests
 
 typecheck::
-	@ $(RUN) mypy $(LINT_TARGETS)
+	@ $(UV) mypy $(LINT_TARGETS)
 
 typecheck::
-	@ $(RUN) mypy --python-version=3.10 tests
+	@ $(UV) mypy --python-version=3.10 tests
 
 scan:
-	@ $(RUN) bandit -r $(PYTHON_PKG) $(SCAN_OPTS)
+	@ $(UV) bandit -r $(PYTHON_PKG) $(SCAN_OPTS)
 
 #
 # Tests
@@ -84,12 +88,12 @@ scan:
 
 test:
 	@rm  -rf tests/__output__
-	$(RUN) pytest -v tests/
+	$(UV) pytest -v tests/
 
 ##
 ## Test using docker image
 ##
-QGIS_VERSION ?= 3.40
+QGIS_VERSION ?= 3.44
 QGIS_IMAGE_REPOSITORY ?= 3liz/qgis-platform
 QGIS_IMAGE_TAG ?= $(QGIS_IMAGE_REPOSITORY):$(QGIS_VERSION)
 docker-test:
@@ -100,4 +104,23 @@ docker-test:
 		--workdir /src \
 		--env QGIS_VERSION=$(QGIS_VERSION) \
 		$(QGIS_IMAGE_TAG) .docker/run-tests.sh
+
+#
+# coverage: covtest
+#
+
+# Run tests coverage
+covtest:
+	$(UV) coverage run -m pytests tests/
+
+coverage: covtest
+	@echo "Bulding coverage html"
+	@ $(UV) coverage hmtl
+
+# Managment
+
+# Output variable
+echo-variable-%:
+	@echo "$($*)"
+
 

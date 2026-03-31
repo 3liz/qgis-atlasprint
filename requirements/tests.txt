@@ -7,10 +7,10 @@ iniconfig==2.3.0 ; python_full_version >= '3.10'
 lxml==6.0.2
 packaging==26.0
 pluggy==1.6.0
-pygments==2.19.2
+pygments==2.20.0
 pytest==8.4.2 ; python_full_version < '3.10'
 pytest==9.0.2 ; python_full_version >= '3.10'
-pytest-qgis @ git+https://github.com/3liz/pytest-qgis.git@190a2859f0c0203b08a0de987cac29b1579ae9b5
+pytest-qgis @ git+https://github.com/3liz/pytest-qgis.git@ff3b8bafc687e9a909f098f4d1823b9209c9efe1 ; python_full_version >= '3.10'
 semver==3.0.4
-tomli==2.4.0 ; python_full_version < '3.11'
+tomli==2.4.1 ; python_full_version < '3.11'
 typing-extensions==4.15.0 ; python_full_version < '3.11'
