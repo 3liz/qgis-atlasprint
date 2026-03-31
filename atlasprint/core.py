@@ -5,7 +5,12 @@ import unicodedata
 
 from enum import Enum
 from pathlib import Path
-from typing import Union, Optional
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Union,
+    Optional,
+)
 from uuid import uuid4
 
 from qgis.core import (
@@ -25,6 +30,13 @@ from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
 from .tools import to_bool
 from . import logger
 
+if TYPE_CHECKING:
+    from qgis.core import (
+        QgsLayoutAtlas,
+        QgsLayoutManager,
+        QgsPrintLayout,
+    )
+
 
 class OutputFormat(Enum):
     Pdf = 'application/pdf'
@@ -38,7 +50,7 @@ class AtlasPrintException(Exception):
     pass
 
 
-def global_scales():
+def global_scales() -> List[float]:
     """Read the global settings about predefined scales.
 
     :return: List of scales.
@@ -60,6 +72,122 @@ def global_scales():
             continue
         scales.append(float(item[1]))
     return scales
+
+
+ExportSettings = Union[
+    QgsLayoutExporter.SvgExportSettings,
+    QgsLayoutExporter.ImageExportSettings,
+    QgsLayoutExporter.PdfExportSettings,
+]
+
+
+def _set_predefined_map_scales(
+    request_id: str,
+    project: QgsProject,
+    reference_map: "QgsLayoutItemMap",
+    *,
+    settings: ExportSettings,
+    scales: Optional[List[float]] = None,
+    scale: Optional[int] = None,
+):
+    if scale:
+        reference_map.setAtlasScalingMode(QgsLayoutItemMap.Fixed)
+        reference_map.setScale(scale)
+
+    if scales:
+        reference_map.setAtlasScalingMode(QgsLayoutItemMap.Predefined)
+        settings.predefinedMapScales = scales
+    elif reference_map.atlasScalingMode() == QgsLayoutItemMap.Predefined:
+        use_project = project.viewSettings().useProjectScales()
+        map_scales = project.viewSettings().mapScales()
+        if not use_project or len(map_scales) == 0:
+            logger.info(
+                f'Request-ID {request_id}, map scales not found in project, fetching predefined map scales in '
+                f'global config'
+            )
+            map_scales = global_scales()
+        settings.predefinedMapScales = map_scales
+
+
+def _prepare_atlas_layout(
+    request_id: str,
+    project: QgsProject,
+    atlas_layout: "QgsPrintLayout",
+    *,
+    settings: ExportSettings,
+    layout_name: str,
+    feature_filter: Optional[str],
+    scales: Optional[list[float]],
+    scale: Optional[int],
+    **additional_params,
+) -> "QgsLayoutAtlas":
+    atlas = atlas_layout.atlas()
+    if not atlas.enabled():
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, the layout `{layout_name}` is not enabled for an atlas'
+        )
+
+    layer = atlas.coverageLayer()
+
+    if feature_filter is None:
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, EXP_FILTER is mandatory to print an atlas layout `{layout_name}`'
+        )
+
+    feature_filter = optimize_expression(layer, feature_filter, request_id)
+
+    expression = QgsExpression(feature_filter)
+    if expression.hasParserError():
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, expression is invalid, parser error: {expression.parserErrorString()}'
+        )
+
+    context = QgsExpressionContext()
+    context.appendScope(QgsExpressionContextUtils.globalScope())
+    context.appendScope(QgsExpressionContextUtils.projectScope(project))
+    context.appendScope(QgsExpressionContextUtils.layoutScope(atlas_layout))
+    context.appendScope(QgsExpressionContextUtils.atlasScope(atlas))
+    context.appendScope(QgsExpressionContextUtils.layerScope(layer))
+    expression.prepare(context)
+    if expression.hasEvalError():
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, expression is invalid, eval error: {expression.evalErrorString()}'
+        )
+
+    atlas.setFilterFeatures(True)
+    atlas.setFilterExpression(feature_filter)
+
+    # Predefined map scales
+    if reference_map := atlas_layout.referenceMap():
+        _set_predefined_map_scales(
+            request_id,
+            project,
+            reference_map,
+            settings=settings,
+            scales=scales,
+            scale=scale,
+        )
+
+    logger.info(
+        f"Request-ID {request_id}, checking for additional parameters to set in the layout before printing…"
+    )
+    for key, value in additional_params.items():
+        found = False
+        item = atlas_layout.itemById(key.lower())
+        if isinstance(item, QgsLayoutItemLabel):
+            item.setText(value)
+            logger.info(
+                f'Request-ID {request_id}, additional parameter "{key.lower()}" found in the layout, '
+                f'setting the value to "{value}"'
+            )
+        if not found:
+            logger.info(
+                f'Additional parameter "{key.lower()}" has not been found in the layout, the value was "{value}", '
+                f'skipping'
+            )
+    logger.info(f"Request-ID {request_id}, end of additional parameters")
+
+    return atlas
 
 
 def print_layout(
@@ -106,8 +234,15 @@ def print_layout(
         canvas
     )
     bridge.setCanvasLayers()
-    manager = project.layoutManager()
-    master_layout = manager.layoutByName(layout_name)
+    manager: Optional["QgsLayoutManager"] = project.layoutManager()
+    if not manager:
+        raise AtlasPrintException("No layout manager defined")
+
+    master_layout: Optional[QgsMasterLayoutInterface] = manager.layoutByName(layout_name)
+    if not master_layout:
+        raise AtlasPrintException(
+            f'Request-ID {request_id}, layout `{layout_name}` not found'
+        )
 
     logger.debug(f'Request-ID {request_id}, preparing settings for the output format "{output_format}"')
     if output_format == OutputFormat.Svg:
@@ -121,101 +256,33 @@ def print_layout(
     # Set DPI to 100
     settings.dpi = 100
 
-    atlas = None
-    atlas_layout = None
-    report_layout = None
-
-    if not master_layout:
-        raise AtlasPrintException(
-            f'Request-ID {request_id}, layout `{layout_name}` not found'
-        )
+    atlas: Optional["QgsLayoutAtlas"] = None
+    atlas_layout: Optional["QgsPrintLayout"] = None
+    report_layout: Optional["QgsMasterLayoutInterface"] = None
 
     if master_layout.layoutType() == QgsMasterLayoutInterface.PrintLayout:
         for pr_layout in manager.printLayouts():
             if pr_layout.name() == layout_name:
                 atlas_layout = pr_layout
+                atlas = _prepare_atlas_layout(
+                    request_id,
+                    project,
+                    pr_layout,
+                    settings=settings,
+                    layout_name=layout_name,
+                    feature_filter=feature_filter,
+                    scales=scales,
+                    scale=scale,
+                    **additional_params,
+                )
                 break
-
-        atlas = atlas_layout.atlas()
-        if not atlas.enabled():
-            raise AtlasPrintException(
-                f'Request-ID {request_id}, the layout `{layout_name}` is not enabled for an atlas'
-            )
-
-        layer = atlas.coverageLayer()
-
-        if feature_filter is None:
-            raise AtlasPrintException(
-                f'Request-ID {request_id}, EXP_FILTER is mandatory to print an atlas layout `{layout_name}`'
-            )
-
-        feature_filter = optimize_expression(layer, feature_filter, request_id)
-
-        expression = QgsExpression(feature_filter)
-        if expression.hasParserError():
-            raise AtlasPrintException(
-                f'Request-ID {request_id}, expression is invalid, parser error: {expression.parserErrorString()}'
-            )
-
-        context = QgsExpressionContext()
-        context.appendScope(QgsExpressionContextUtils.globalScope())
-        context.appendScope(QgsExpressionContextUtils.projectScope(project))
-        context.appendScope(QgsExpressionContextUtils.layoutScope(atlas_layout))
-        context.appendScope(QgsExpressionContextUtils.atlasScope(atlas))
-        context.appendScope(QgsExpressionContextUtils.layerScope(layer))
-        expression.prepare(context)
-        if expression.hasEvalError():
-            raise AtlasPrintException(
-                f'Request-ID {request_id}, expression is invalid, eval error: {expression.evalErrorString()}'
-            )
-
-        atlas.setFilterFeatures(True)
-        atlas.setFilterExpression(feature_filter)
-
-        if atlas_layout.referenceMap():
-            if scale:
-                atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Fixed)
-                atlas_layout.referenceMap().setScale(scale)
-
-            if scales:
-                atlas_layout.referenceMap().setAtlasScalingMode(QgsLayoutItemMap.Predefined)
-                settings.predefinedMapScales = scales
-
-            if not scales and atlas_layout.referenceMap().atlasScalingMode() == QgsLayoutItemMap.Predefined:
-                use_project = project.viewSettings().useProjectScales()
-                map_scales = project.viewSettings().mapScales()
-                if not use_project or len(map_scales) == 0:
-                    logger.info(
-                        f'Request-ID {request_id}, map scales not found in project, fetching predefined map scales in '
-                        f'global config'
-                    )
-                    map_scales = global_scales()
-                settings.predefinedMapScales = map_scales
+        else:
+            logger.warning(f"No layout found for {layout_name}")
 
     elif master_layout.layoutType() == QgsMasterLayoutInterface.Report:
         report_layout = master_layout
     else:
         raise AtlasPrintException(f'Request-ID {request_id}, the layout is not supported by the plugin')
-
-    if atlas_layout:
-        logger.info(
-            f"Request-ID {request_id}, checking for additional parameters to set in the layout before printing…"
-        )
-        for key, value in additional_params.items():
-            found = False
-            item = atlas_layout.itemById(key.lower())
-            if isinstance(item, QgsLayoutItemLabel):
-                item.setText(value)
-                logger.info(
-                    f'Request-ID {request_id}, additional parameter "{key.lower()}" found in the layout, '
-                    f'setting the value to "{value}"'
-                )
-            if not found:
-                logger.info(
-                    f'Additional parameter "{key.lower()}" has not been found in the layout, the value was "{value}", '
-                    f'skipping'
-                )
-        logger.info(f"Request-ID {request_id}, end of additional parameters")
 
     file_name = f'{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}'
     export_path = Path(tempfile.gettempdir()).joinpath(file_name)
@@ -289,8 +356,7 @@ def clean_string(input_string: str) -> str:
     """ Clean a string to be used as a file name """
     input_string = "".join([c for c in input_string if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
     nfkd_form = unicodedata.normalize('NFKD', input_string)
-    only_ascii = nfkd_form.encode('ASCII', 'ignore')
-    only_ascii = only_ascii.decode('ASCII')
+    only_ascii = nfkd_form.encode('ASCII', 'ignore').decode('ASCII"')
     return only_ascii.replace(' ', '_')
 
 

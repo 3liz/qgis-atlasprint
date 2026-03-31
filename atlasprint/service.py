@@ -25,7 +25,7 @@ import json
 import traceback
 
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 from qgis.core import QgsExpression, QgsProject
 from qgis.server import QgsServerRequest, QgsServerResponse, QgsService
@@ -36,7 +36,11 @@ from .tools import get_lizmap_groups, get_lizmap_user_login
 
 from .import logger
 
-def write_json_response(data: Dict[str, str], response: QgsServerResponse, code: int = 200) -> None:
+def write_json_response(
+    data: Dict[str, Any],
+    response: QgsServerResponse,
+    code: int = 200,
+) -> None:
     """ Write data as json response
     """
     response.setStatusCode(code)
@@ -129,9 +133,15 @@ class AtlasPrintService(QgsService):
         except AtlasPrintError as err:
             err.format_response(response)
         except Exception:
-            logger.critical(f"Unhandled exception:\n{traceback.format_exc()}, X-Request-ID {request_id}")
-            err = AtlasPrintError(500, "Internal 'AtlasPrint' service error", request_id)
-            err.format_response(response)
+            logger.critical(
+                f"Unhandled exception:\n{traceback.format_exc()}, "
+                f"X-Request-ID {request_id}",
+            )
+            AtlasPrintError(
+                500,
+                "Internal 'AtlasPrint' service error",
+                request_id,
+            ).format_response(response)
         finally:
             # Remove previous login
             logger.info("Removing user and group variables from the QGIS project")
@@ -158,7 +168,7 @@ class AtlasPrintService(QgsService):
 
     def get_print(
             self,
-            params: Dict[str, str],
+            params: Dict[str, Any],
             response: QgsServerResponse,
             project: QgsProject,
             lizmap_user: str,
