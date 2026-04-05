@@ -3,7 +3,7 @@
 bandit==1.8.6 ; python_full_version < '3.10'
 bandit==1.9.3 ; python_full_version >= '3.10'
 colorama==0.4.6 ; sys_platform == 'win32'
-librt==0.7.8 ; platform_python_implementation != 'PyPy'
+librt==0.8.1 ; platform_python_implementation != 'PyPy'
 lxml-stubs==0.5.1
 markdown-it-py==3.0.0 ; python_full_version < '3.10'
 markdown-it-py==4.0.0 ; python_full_version >= '3.10'
