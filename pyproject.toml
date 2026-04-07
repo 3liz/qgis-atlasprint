@@ -39,7 +39,7 @@ lint = [
 ]
 
 [tool.uv.sources]
-pytest-qgis = { git = "https://github.com/3liz/pytest-qgis.git", branch = "v3" }
+pytest-qgis = { git = "https://github.com/3liz/pytest-qgis.git" }
 
 # Ruff configuration
 # See https://doc.astral.sh/ruff/configuration

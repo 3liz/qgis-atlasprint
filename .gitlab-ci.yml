@@ -13,14 +13,16 @@ stages:
 # Lint
 # ------------
 lint:
-  image: ${REGISTRY_URL}/factory-ci-runner:qgis-release
+  image: ${REGISTRY_URL}/factory-ci-runner:qgis-${QGIS_FLAVOR}
   tags:
     - factory-plain
   stage: lint
   script:
     - make lint
-  allow_failure: true
-
+  parallel:
+    matrix:
+      - QGIS_FLAVOR: ["ltr", "release"]
+ 
 # ------------
 # Tests
 # ------------
@@ -51,6 +53,8 @@ qgis-tests:
 # Packages 
 #
 
+.release_rules:
+  if: '$CI_COMMIT_TAG =~ /^(?:release-|v)?\d+\.\d+\.\d+(?:-.*)?$/'
 
 build:
   image: $REGISTRY_URI/factory-ci-runner:qgis-plugin-ci
@@ -58,7 +62,7 @@ build:
   tags:
     - factory-plain
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^(?:release-|v)?\d+\.\d+\.\d+(?:-.*)?$/'
+    - if: !reference [.release_rules, if]
       variables:
         PRERELEASE: ""
     - if: $RELEASE_BRANCH == "true"
@@ -81,7 +85,7 @@ deploy:
   tags:
     - fabric
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^(?:release-|v)?\d+\.\d+\.\d+(?:-.*)?$/'
+    - !reference [.release_rules]
     - if: $RELEASE_BRANCH == "true"
   dependencies:
     - build
@@ -102,7 +106,7 @@ release:
     - factory-plain
   stage: release
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^(?:release-|v)?\d+\.\d+\.\d+(?:-.*)?$/'
+    - !reference [.release_rules]
   script:
     - create_ticket.py
     - gitlab_release
