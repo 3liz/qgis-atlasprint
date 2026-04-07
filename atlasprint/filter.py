@@ -18,7 +18,7 @@
 
 from qgis.server import QgsServerFilter
 
-from atlasprint.logger import Logger
+from . import logger
 
 
 class AtlasPrintFilter(QgsServerFilter):
@@ -26,8 +26,7 @@ class AtlasPrintFilter(QgsServerFilter):
     def __init__(self, server_iface):
         super().__init__(server_iface)
 
-        self.logger = Logger()
-        self.logger.info('Init print filter')
+        logger.info('Init print filter')
         self.server_iface = server_iface
 
     def requestReady(self):

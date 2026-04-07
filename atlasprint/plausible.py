@@ -1,6 +1,8 @@
+"""
 __copyright__ = 'Copyright 2024, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
+"""
 
 import json
 import os
@@ -10,8 +12,9 @@ from qgis.core import Qgis, QgsNetworkAccessManager
 from qgis.PyQt.QtCore import QByteArray, QDateTime, QUrl
 from qgis.PyQt.QtNetwork import QNetworkReply, QNetworkRequest
 
-from atlasprint.logger import Logger
-from atlasprint.tools import to_bool, version
+from .tools import to_bool, version
+
+from . import logger
 
 MIN_SECONDS = 3600
 ENV_SKIP_STATS = "3LIZ_SKIP_STATS"
@@ -122,7 +125,6 @@ class Plausible:
         if not is_lizcloud:
             return True
 
-        logger = Logger()
         message = (
             f"Request HTTP OS process '{os.getpid()}' sent to '{plausible_url}' with domain '{plausible_domain} : ")
         if r.error() == QNetworkReply.NetworkError.NoError:

@@ -22,7 +22,7 @@ jobs:
 
       - name: Run linter
         run: |
-            ruff check --preview --output-format=concise atlasprint
+            ruff check --output-format=concise atlasprint
 
       - name: Run security check
         run: bandit -r atlasprint --severity-level=high
@@ -37,7 +37,7 @@ jobs:
           "3.34",
           "3.40",
           "3.44",
-          "nightly-release",
+          "4.0",
         ]
     steps:
 

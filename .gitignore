@@ -54,4 +54,5 @@ __output__
 
 atlasprint.zip
 atlasprint.*.zip
+plugins.xml
 tests/data/atlas_simple.qgs.cfg

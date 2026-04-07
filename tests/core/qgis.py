@@ -20,6 +20,8 @@ from qgis.server import QgsServerInterface
 # Logger hook
 #
 
+QGIS_VERSION_INT = Qgis.versionInt()
+
 
 def install_logger_hook() -> None:
     """Install message log hook"""
@@ -27,7 +29,7 @@ def install_logger_hook() -> None:
     from qgis.core import Qgis
 
     # Add a hook to qgis  message log
-    def writelogmessage(message, tag, level):
+    def writelogmessage(message, tag, level, *args):
         arg = f"{tag}: {message}"
         if level == Qgis.Warning:
             logging.warning(arg)
@@ -37,8 +39,10 @@ def install_logger_hook() -> None:
             logging.debug(arg)
 
     messageLog = QgsApplication.messageLog()
-    messageLog.messageReceived.connect(writelogmessage)
-
+    if QGIS_VERSION_INT < 40000:
+        messageLog.messageReceived.connect(writelogmessage)
+    else:
+        messageLog.messageReceivedWithFormat.connect(writelogmessage)
 
 #
 # Plugin loader

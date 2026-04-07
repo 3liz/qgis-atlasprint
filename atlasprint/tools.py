@@ -1,6 +1,8 @@
+"""
 __copyright__ = 'Copyright 2021, 3Liz'
 __license__ = 'GPL version 3'
 __email__ = 'info@3liz.org'
+"""
 
 import configparser
 
@@ -9,7 +11,7 @@ from typing import Dict, Tuple, Union
 
 from qgis.core import Qgis, QgsMessageLog
 
-from atlasprint.logger import Logger
+from . import logger
 
 
 def version() -> str:
@@ -41,7 +43,7 @@ def to_bool(val: Union[str, int, float, bool, None]) -> bool:
     return bool(val)
 
 
-def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[str]:
+def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[str, ...]:
     """ Get Lizmap user groups provided by the request
 
     COPIED from Lizmap plugin, server side in core.py
@@ -51,7 +53,6 @@ def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[
 
     # Defined groups
     groups = []
-    logger = Logger()
 
     # Get Lizmap User Groups in request headers
     if headers:
@@ -91,8 +92,6 @@ def get_lizmap_user_login(params: Dict[str, str], headers: Dict[str, str]) -> st
     """
     # Defined login
     login = ''
-
-    logger = Logger()
 
     # Get Lizmap User Login in request headers
     if headers:
