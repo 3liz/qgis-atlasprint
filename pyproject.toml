@@ -99,7 +99,7 @@ plugin_source = "atlasprint"
 # Mypy
 #
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = [
