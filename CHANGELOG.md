@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 3.4.4 - 2026-05-18
+
+* Update PDF export settings with layout custom properties.
+  From https://github.com/3liz/qgis-atlasprint/pull/103  
+
 ## 3.4.3 - 2025-06-13
 
 * Review and add log about rasterize option
