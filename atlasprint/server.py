@@ -18,6 +18,8 @@
  ***************************************************************************/
 """
 
+from typing import TYPE_CHECKING, cast
+
 from qgis.server import QgsServerInterface
 
 from .filter import AtlasPrintFilter
@@ -26,6 +28,9 @@ from .service import AtlasPrintService
 from .tools import version
 
 from . import logger
+
+if TYPE_CHECKING:
+    from qgis.server import QgsServiceRegistry
 
 
 class AtlasPrintServer:
@@ -42,19 +47,19 @@ class AtlasPrintServer:
             self.plausible.request_stat_event()
         except Exception as e:
             logger.log_exception(e)
-            logger.critical('Error while calling the API stats')
+            logger.critical("Error while calling the API stats")
 
         # Register service
         try:
-            reg = server_iface.serviceRegistry()
+            reg = cast("QgsServiceRegistry", server_iface.serviceRegistry())
             reg.registerService(AtlasPrintService())
         except Exception as e:
-            logger.critical(f'Error loading filter AtlasPrint : {e}')
+            logger.critical(f"Error loading filter AtlasPrint : {e}")
             raise
 
         # Add filter
         try:
             server_iface.registerFilter(AtlasPrintFilter(self.server_iface), 50)
         except Exception as e:
-            logger.critical(f'Error loading filter AtlasPrint : {e}')
+            logger.critical(f"Error loading filter AtlasPrint : {e}")
             raise

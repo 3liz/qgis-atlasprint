@@ -10,10 +10,12 @@ from typing import (
     List,
     Union,
     Optional,
+    cast,
 )
 from uuid import uuid4
 
 from qgis.core import (
+    Qgis,
     QgsExpression,
     QgsExpressionContext,
     QgsExpressionContextUtils,
@@ -22,7 +24,6 @@ from qgis.core import (
     QgsLayoutItemMap,
     QgsMasterLayoutInterface,
     QgsProject,
-    QgsRenderContext,
     QgsSettings,
     QgsVectorLayer,
 )
@@ -40,14 +41,15 @@ if TYPE_CHECKING:
 
 
 class OutputFormat(Enum):
-    Pdf = 'application/pdf'
-    Png = 'image/png'
-    Jpeg = 'image/jpeg'
-    Svg = 'image/svg'
+    Pdf = "application/pdf"
+    Png = "image/png"
+    Jpeg = "image/jpeg"
+    Svg = "image/svg"
 
 
 class AtlasPrintException(Exception):
     """A wrong input from the user."""
+
     pass
 
 
@@ -58,17 +60,14 @@ def global_scales() -> List[float]:
     :rtype: list
     """
     # Copied from QGIS source code
-    default_scales = (
-        '1:1000000,1:500000,1:250000,1:100000,1:50000,1:25000,'
-        '1:10000,1:5000,1:2500,1:1000,1:500'
-    )
+    default_scales = "1:1000000,1:500000,1:250000,1:100000,1:50000,1:25000,1:10000,1:5000,1:2500,1:1000,1:500"
 
     settings = QgsSettings()
-    scales_string = settings.value('Map/scales', default_scales)
-    data = scales_string.split(',')
+    scales_string = settings.value("Map/scales", default_scales)
+    data = scales_string.split(",")
     scales = []
     for scale in data:
-        item = scale.split(':')
+        item = scale.split(":")
         if len(item) != 2:
             continue
         scales.append(float(item[1]))
@@ -92,19 +91,19 @@ def _set_predefined_map_scales(
     scale: Optional[int] = None,
 ):
     if scale:
-        reference_map.setAtlasScalingMode(QgsLayoutItemMap.Fixed)
+        reference_map.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Fixed)
         reference_map.setScale(scale)
 
     if scales:
-        reference_map.setAtlasScalingMode(QgsLayoutItemMap.Predefined)
+        reference_map.setAtlasScalingMode(QgsLayoutItemMap.AtlasScalingMode.Predefined)
         settings.predefinedMapScales = scales
-    elif reference_map.atlasScalingMode() == QgsLayoutItemMap.Predefined:
-        use_project = project.viewSettings().useProjectScales()
-        map_scales = project.viewSettings().mapScales()
+    elif reference_map.atlasScalingMode() == QgsLayoutItemMap.AtlasScalingMode.Predefined:
+        use_project = project.viewSettings().useProjectScales()  # type: ignore [union-attr]
+        map_scales = project.viewSettings().mapScales()  # type: ignore [union-attr]
         if not use_project or len(map_scales) == 0:
             logger.info(
-                f'Request-ID {request_id}, map scales not found in project, fetching predefined map scales in '
-                f'global config'
+                f"Request-ID {request_id}, map scales not found in project, fetching predefined map scales in "
+                f"global config"
             )
             map_scales = global_scales()
         settings.predefinedMapScales = map_scales
@@ -122,17 +121,17 @@ def _prepare_atlas_layout(
     scale: Optional[int],
     **additional_params,
 ) -> "QgsLayoutAtlas":
-    atlas = atlas_layout.atlas()
+    atlas: "QgsLayoutAtlas" = atlas_layout.atlas()  # type: ignore [assignment]
     if not atlas.enabled():
         raise AtlasPrintException(
-            f'Request-ID {request_id}, the layout `{layout_name}` is not enabled for an atlas'
+            f"Request-ID {request_id}, the layout `{layout_name}` is not enabled for an atlas"
         )
 
-    layer = atlas.coverageLayer()
+    layer: "QgsVectorLayer" = atlas.coverageLayer()  # type: ignore [assignment]
 
     if feature_filter is None:
         raise AtlasPrintException(
-            f'Request-ID {request_id}, EXP_FILTER is mandatory to print an atlas layout `{layout_name}`'
+            f"Request-ID {request_id}, EXP_FILTER is mandatory to print an atlas layout `{layout_name}`"
         )
 
     feature_filter = optimize_expression(layer, feature_filter, request_id)
@@ -140,7 +139,7 @@ def _prepare_atlas_layout(
     expression = QgsExpression(feature_filter)
     if expression.hasParserError():
         raise AtlasPrintException(
-            f'Request-ID {request_id}, expression is invalid, parser error: {expression.parserErrorString()}'
+            f"Request-ID {request_id}, expression is invalid, parser error: {expression.parserErrorString()}"
         )
 
     context = QgsExpressionContext()
@@ -152,7 +151,7 @@ def _prepare_atlas_layout(
     expression.prepare(context)
     if expression.hasEvalError():
         raise AtlasPrintException(
-            f'Request-ID {request_id}, expression is invalid, eval error: {expression.evalErrorString()}'
+            f"Request-ID {request_id}, expression is invalid, eval error: {expression.evalErrorString()}"
         )
 
     atlas.setFilterFeatures(True)
@@ -184,7 +183,7 @@ def _prepare_atlas_layout(
         if not found:
             logger.info(
                 f'Additional parameter "{key.lower()}" has not been found in the layout, the value was "{value}", '
-                f'skipping'
+                f"skipping"
             )
     logger.info(f"Request-ID {request_id}, end of additional parameters")
 
@@ -198,7 +197,7 @@ def print_layout(
     feature_filter: Optional[str] = None,
     scales: Optional[list] = None,
     scale: Optional[int] = None,
-    request_id: str = '',
+    request_id: str = "",
     **additional_params,
 ) -> Path:
     """Generate a PDF for an atlas or a report.
@@ -230,10 +229,7 @@ def print_layout(
     """
 
     canvas = QgsMapCanvas()
-    bridge = QgsLayerTreeMapCanvasBridge(
-        project.layerTreeRoot(),
-        canvas
-    )
+    bridge = QgsLayerTreeMapCanvasBridge(project.layerTreeRoot(), canvas)
     bridge.setCanvasLayers()
     manager: Optional["QgsLayoutManager"] = project.layoutManager()
     if not manager:
@@ -241,18 +237,16 @@ def print_layout(
 
     master_layout: Optional[QgsMasterLayoutInterface] = manager.layoutByName(layout_name)
     if not master_layout:
-        raise AtlasPrintException(
-            f'Request-ID {request_id}, layout `{layout_name}` not found'
-        )
+        raise AtlasPrintException(f"Request-ID {request_id}, layout `{layout_name}` not found")
 
     logger.debug(f'Request-ID {request_id}, preparing settings for the output format "{output_format}"')
     if output_format == OutputFormat.Svg:
-        settings = QgsLayoutExporter.SvgExportSettings()
+        settings: "QgsLayoutExporter.SvgExportSettings" = QgsLayoutExporter.SvgExportSettings()
     elif output_format in (OutputFormat.Png, OutputFormat.Jpeg):
-        settings = QgsLayoutExporter.ImageExportSettings()
+        settings: "QgsLayoutExporter.ImageExportSettings" = QgsLayoutExporter.ImageExportSettings()  # type: ignore [no-redef]
     else:
         # PDF by default
-        settings = QgsLayoutExporter.PdfExportSettings()
+        settings: "QgsLayoutExporter.PdfExportSettings" = QgsLayoutExporter.PdfExportSettings()  # type: ignore [no-redef]
 
     # Set DPI to 100
     settings.dpi = 100
@@ -261,7 +255,7 @@ def print_layout(
     atlas_layout: Optional["QgsPrintLayout"] = None
     report_layout: Optional["QgsMasterLayoutInterface"] = None
 
-    if master_layout.layoutType() == QgsMasterLayoutInterface.PrintLayout:
+    if master_layout.layoutType() == QgsMasterLayoutInterface.Type.PrintLayout:
         for pr_layout in manager.printLayouts():
             if pr_layout.name() == layout_name:
                 atlas_layout = pr_layout
@@ -280,29 +274,35 @@ def print_layout(
         else:
             logger.warning(f"No layout found for {layout_name}")
 
-    elif master_layout.layoutType() == QgsMasterLayoutInterface.Report:
+    elif master_layout.layoutType() == QgsMasterLayoutInterface.Type.Report:
         report_layout = master_layout
     else:
-        raise AtlasPrintException(f'Request-ID {request_id}, the layout is not supported by the plugin')
+        raise AtlasPrintException(f"Request-ID {request_id}, the layout is not supported by the plugin")
 
-    file_name = f'{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}'
+    file_name = f"{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}"
     export_path = Path(tempfile.gettempdir()).joinpath(file_name)
 
-    logger.info(f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}")
+    logger.info(
+        f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}"
+    )
 
     if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
-        exporter = QgsLayoutExporter(atlas_layout or report_layout)
-        result = exporter.exportToImage(str(export_path), settings)
+        exporter = QgsLayoutExporter(atlas_layout or report_layout)  # type: ignore [arg-type]
+        result = exporter.exportToImage(str(export_path), settings)  # type: ignore [arg-type]
         error = result_message(result)
-    elif output_format in (OutputFormat.Svg, ):
-        exporter = QgsLayoutExporter(atlas_layout or report_layout)
+    elif output_format in (OutputFormat.Svg,):
+        exporter = QgsLayoutExporter(atlas_layout or report_layout)  # type: ignore [arg-type]
         result = exporter.exportToSvg(str(export_path), settings)
         error = result_message(result)
     else:
         # Default to PDF
         # PDF settings
         if atlas_layout:
-            settings.forcevectorOutput = to_bool(
+            settings = cast("QgsLayoutExporter.PdfExportSettings", settings)  # type: ignore
+
+            TextRenderFormat = Qgis.TextRenderFormat
+
+            settings.forceVectorOutput = to_bool(
                 atlas_layout.customProperty("forceVector", False),
             )
             settings.exportMetadata = to_bool(
@@ -311,35 +311,40 @@ def print_layout(
             intTextRenderFormat = int(
                 atlas_layout.customProperty(
                     "pdfTextFormat",
-                    int(QgsRenderContext.TextFormatAlwaysText),
+                    int(TextRenderFormat.AlwaysText),
                 )
             )
             textRenderFormatValues = {
-                int(QgsRenderContext.TextFormatAlwaysText): QgsRenderContext.TextFormatAlwaysText,
-                int(QgsRenderContext.TextFormatAlwaysOutlines): QgsRenderContext.TextFormatAlwaysOutlines,
+                int(TextRenderFormat.AlwaysText): TextRenderFormat.AlwaysText,
+                int(TextRenderFormat.AlwaysOutlines): TextRenderFormat.AlwaysOutlines,
             }
             settings.textRenderFormat = textRenderFormatValues.get(
-                intTextRenderFormat,
-                QgsRenderContext.TextFormatAlwaysText
+                intTextRenderFormat, TextRenderFormat.AlwaysText
             )
             settings.simplifyGeometries = to_bool(
                 atlas_layout.customProperty("pdfSimplify", False),
             )
-            settings.rasterizeWholeImage = to_bool(
+            # NOTE: Why mypy ignore settings redefinition above ?
+            settings.rasterizeWholeImage = to_bool(  # type: ignore [attr-defined]
                 atlas_layout.customProperty("rasterize", False),
             )
-            logger.info(f"Request-ID {request_id}, rasterize = {settings.rasterizeWholeImage}")
+            logger.info(f"Request-ID {request_id}, rasterize = {settings.rasterizeWholeImage}")  # type: ignore
         # Export
-        result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
+        # TODO: check out the typing error
+        result, error = QgsLayoutExporter.exportToPdf(  # type: ignore [call-overload]
+            atlas or report_layout,
+            str(export_path),
+            settings,
+        )
         # Let's override error message
         _ = error
         error = result_message(result)
 
     logger.info(f"Request-ID {request_id}, export done, result {result_message(result)}")
 
-    if result != QgsLayoutExporter.Success:
+    if result != QgsLayoutExporter.ExportResult.Success:
         raise AtlasPrintException(
-            f'Request-ID {request_id}, export not generated in QGIS exporter {export_path} : {error}'
+            f"Request-ID {request_id}, export not generated in QGIS exporter {export_path} : {error}"
         )
 
     if not export_path.is_file():
@@ -349,44 +354,46 @@ def print_layout(
             f"Message from QGIS exporter : {error}\n"
             f"File path : {export_path}\n"
         )
-        raise AtlasPrintException(f'Export OK from QGIS, but file not found on the file system : {export_path}')
+        raise AtlasPrintException(
+            f"Export OK from QGIS, but file not found on the file system : {export_path}"
+        )
 
     return export_path
 
 
 def result_message(error: QgsLayoutExporter.ExportResult) -> str:
-    """ Error message according to the enumeration. """
-    if error == QgsLayoutExporter.Success:
-        return 'Success'
-    if error == QgsLayoutExporter.Canceled:
-        return 'Canceled'
-    if error == QgsLayoutExporter.MemoryError:
-        return 'Memory error'
-    if error == QgsLayoutExporter.FileError:
-        return 'File error'
-    if error == QgsLayoutExporter.PrintError:
-        return 'Print error'
-    if error == QgsLayoutExporter.SvgLayerError:
-        return 'SVG layer error'
-    if error == QgsLayoutExporter.IteratorError:
-        return 'Iterator error'
+    """Error message according to the enumeration."""
+    if error == QgsLayoutExporter.ExportResult.Success:
+        return "Success"
+    if error == QgsLayoutExporter.ExportResult.Canceled:
+        return "Canceled"
+    if error == QgsLayoutExporter.ExportResult.MemoryError:
+        return "Memory error"
+    if error == QgsLayoutExporter.ExportResult.FileError:
+        return "File error"
+    if error == QgsLayoutExporter.ExportResult.PrintError:
+        return "Print error"
+    if error == QgsLayoutExporter.ExportResult.SvgLayerError:
+        return "SVG layer error"
+    if error == QgsLayoutExporter.ExportResult.IteratorError:
+        return "Iterator error"
 
     logger.critical(
-            f"Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : {error}"
+        f"Check the PyQGIS documentation about this enum, maybe a new item in a newer QGIS version : {error}"
     )
-    return f'Unknown error : {error}'
+    return f"Unknown error : {error}"
 
 
 def clean_string(input_string: str) -> str:
-    """ Clean a string to be used as a file name """
-    input_string = "".join([c for c in input_string if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
-    nfkd_form = unicodedata.normalize('NFKD', input_string)
-    only_ascii = nfkd_form.encode('ASCII', 'ignore').decode('ASCII"')
-    return only_ascii.replace(' ', '_')
+    """Clean a string to be used as a file name"""
+    input_string = "".join([c for c in input_string if c.isalpha() or c.isdigit() or c == " "]).rstrip()
+    nfkd_form = unicodedata.normalize("NFKD", input_string)
+    only_ascii = nfkd_form.encode("ASCII", "ignore").decode('ASCII"')
+    return only_ascii.replace(" ", "_")
 
 
 def parse_output_format(output: Union[str, None]) -> OutputFormat:
-    """ Read the MIME type as string to return the correct format. """
+    """Read the MIME type as string to return the correct format."""
     # The list is from QGIS server documentation :
     # https://docs.qgis.org/3.16/en/docs/server_manual/services.html#wms-getprint-format
     if output is None:
@@ -394,20 +401,20 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
 
     output = output.lower()
 
-    if output == '':
+    if output == "":
         return OutputFormat.Pdf
 
-    if output in ('pdf', 'application/pdf'):
+    if output in ("pdf", "application/pdf"):
         return OutputFormat.Pdf
 
-    if output in ('image/png', 'png'):
+    if output in ("image/png", "png"):
         return OutputFormat.Png
 
-    if output in ('image/jpeg', 'jpeg', 'jpg'):
+    if output in ("image/jpeg", "jpeg", "jpg"):
         return OutputFormat.Jpeg
 
-    if output in ('svg', 'image/svg', 'image/svg+xml'):
-        logger.info('SVG is not well supported. Default to PDF')
+    if output in ("svg", "image/svg", "image/svg+xml"):
+        logger.info("SVG is not well supported. Default to PDF")
         return OutputFormat.Pdf
 
     # Default value
@@ -418,14 +425,16 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
 def optimize_expression(
     layer: QgsVectorLayer,
     expression: str,
-    request_id: str = 'ND',
+    request_id: str = "ND",
 ) -> str:
     """Check if we can optimize the expression.
 
     https://github.com/3liz/qgis-atlasprint/issues/23
     """
-    if expression.find('$id') < 0:
-        logger.info(f"Request-ID {request_id} : $id' not found in the expression, returning the input expression.")
+    if expression.find("$id") < 0:
+        logger.info(
+            f"Request-ID {request_id} : $id' not found in the expression, returning the input expression."
+        )
         return expression
 
     primary_keys = layer.primaryKeyAttributes()
@@ -435,10 +444,14 @@ def optimize_expression(
 
     field = layer.fields().at(0)
     if not field.isNumeric():
-        logger.info(f"Request-ID {request_id} : The field '{field.name()}' is not numeric in layer '{layer.id()}'.")
+        logger.info(
+            f"Request-ID {request_id} : The field '{field.name()}' is not numeric in layer '{layer.id()}'."
+        )
         return expression
 
-    expression = expression.replace('$id', f'"{field.name()}"')
-    logger.info(f'Request-ID {request_id} : $id has been replaced by "{field.name()}" in layer "{layer.id()}"')
+    expression = expression.replace("$id", f'"{field.name()}"')
+    logger.info(
+        f'Request-ID {request_id} : $id has been replaced by "{field.name()}" in layer "{layer.id()}"'
+    )
 
     return expression

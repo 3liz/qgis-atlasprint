@@ -15,11 +15,11 @@ from . import logger
 
 
 def version() -> str:
-    """ Returns the Lizmap current version. """
-    file_path = Path(__file__).parent.joinpath('metadata.txt')
+    """Returns the Lizmap current version."""
+    file_path = Path(__file__).parent.joinpath("metadata.txt")
     config = configparser.ConfigParser()
     try:
-        config.read(file_path, encoding='utf8')
+        config.read(file_path, encoding="utf8")
     except UnicodeDecodeError:
         # Issue LWC https://github.com/3liz/lizmap-web-client/issues/1908
         # Maybe a locale issue ?
@@ -28,23 +28,25 @@ def version() -> str:
         QgsMessageLog.logMessage(
             "Error, an UnicodeDecodeError occurred while reading the metadata.txt. Is the locale "
             "correctly set on the server ?",
-            "AtlasPrint", Qgis.Critical)
-        return 'NULL'
+            "AtlasPrint",
+            Qgis.MessageLevel.Critical,
+        )
+        return "NULL"
     else:
         return config["general"]["version"]
 
 
 def to_bool(val: Union[str, int, float, bool, None]) -> bool:
-    """ Convert config value to boolean """
+    """Convert config value to boolean"""
     if isinstance(val, str):
         # For string, compare lower value to True string
-        return val.lower() in ('yes', 'true', 't', '1')
+        return val.lower() in ("yes", "true", "t", "1")
 
     return bool(val)
 
 
 def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[str, ...]:
-    """ Get Lizmap user groups provided by the request
+    """Get Lizmap user groups provided by the request
 
     COPIED from Lizmap plugin, server side in core.py
     Only the signature is simplified.
@@ -58,10 +60,10 @@ def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[
     if headers:
         logger.info("Request headers provided")
         # Get Lizmap user groups defined in request headers
-        user_groups = headers.get('X-Lizmap-User-Groups')
+        user_groups = headers.get("X-Lizmap-User-Groups")
         if user_groups is not None:
-            groups = [g.strip() for g in user_groups.split(',')]
-            logger.info("Lizmap user groups in request headers : {}".format(','.join(groups)))
+            groups = [g.strip() for g in user_groups.split(",")]
+            logger.info("Lizmap user groups in request headers : {}".format(",".join(groups)))
     else:
         logger.info("No request headers provided")
 
@@ -74,30 +76,30 @@ def get_lizmap_groups(params: Dict[str, str], headers: Dict[str, str]) -> Tuple[
     # Get group in parameters
     if params:
         # Get Lizmap user groups defined in parameters
-        user_groups = params.get('LIZMAP_USER_GROUPS')
+        user_groups = params.get("LIZMAP_USER_GROUPS")
         if user_groups is not None:
-            groups = [g.strip() for g in user_groups.split(',')]
-            logger.info("Lizmap user groups in parameters : {}".format(','.join(groups)))
+            groups = [g.strip() for g in user_groups.split(",")]
+            logger.info("Lizmap user groups in parameters : {}".format(",".join(groups)))
 
     # noinspection PyTypeChecker
     return tuple(groups)
 
 
 def get_lizmap_user_login(params: Dict[str, str], headers: Dict[str, str]) -> str:
-    """ Get Lizmap user login provided by the request
+    """Get Lizmap user login provided by the request
 
     COPIED from Lizmap plugin, server side in core.py
     Only the signature is simplified.
     This code is tested in the Lizmap plugin.
     """
     # Defined login
-    login = ''
+    login = ""
 
     # Get Lizmap User Login in request headers
     if headers:
         logger.info("Request headers provided")
         # Get Lizmap user login defined in request headers
-        user_login = headers.get('X-Lizmap-User')
+        user_login = headers.get("X-Lizmap-User")
         if user_login is not None:
             login = user_login
             logger.info(f"Lizmap user login in request headers : {login}")
@@ -112,7 +114,7 @@ def get_lizmap_user_login(params: Dict[str, str], headers: Dict[str, str]) -> st
     # Get login in parameters
     if params:
         # Get Lizmap user login defined in parameters
-        user_login = params.get('LIZMAP_USER')
+        user_login = params.get("LIZMAP_USER")
         if user_login is not None:
             login = user_login
             logger.info(f"Lizmap user login in parameters : {login}")

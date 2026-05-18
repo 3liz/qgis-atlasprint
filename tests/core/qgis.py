@@ -6,6 +6,7 @@ import sys
 
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Optional,
 )
@@ -15,6 +16,10 @@ import semver
 from qgis.core import Qgis, QgsApplication
 from qgis.gui import QgisInterface
 from qgis.server import QgsServerInterface
+
+if TYPE_CHECKING:
+    from qgis.core import QgsMessageLog
+
 
 #
 # Logger hook
@@ -38,11 +43,12 @@ def install_logger_hook() -> None:
         else:
             logging.debug(arg)
 
-    messageLog = QgsApplication.messageLog()
+    messageLog: "QgsMessageLog" = QgsApplication.messageLog()  # type: ignore [assignment]
     if QGIS_VERSION_INT < 40000:
         messageLog.messageReceived.connect(writelogmessage)
     else:
-        messageLog.messageReceivedWithFormat.connect(writelogmessage)
+        messageLog.messageReceivedWithFormat.connect(writelogmessage)  # type: ignore [attr-defined]
+
 
 #
 # Plugin loader
@@ -107,7 +113,7 @@ def _load_plugin(
 
 
 def _check_qgis_version(minver: Optional[str], maxver: Optional[str]) -> bool:
-    version = semver.Version.parse(Qgis.QGIS_VERSION.split("-", maxsplit=1)[0])
+    version = semver.Version.parse(Qgis.version().split("-", maxsplit=1)[0])
 
     def _version(ver: Optional[str]) -> semver.Version:
         if not ver:

@@ -73,7 +73,7 @@ def server(request: pytest.FixtureRequest) -> QgsServer:
 @pytest.fixture(autouse=True, scope="session")
 def plugin(rootdir: Path, server: QgsServer) -> Any:
     plugin_path = rootdir.parent.joinpath(PLUGIN_SOURCE)
-    plugin = load_server_plugin(plugin_path, server.serverInterface())
+    plugin = load_server_plugin(plugin_path, server.serverInterface())  # type: ignore [arg-type]
 
     yield plugin
 
@@ -98,14 +98,17 @@ def client(data: Path, output_dir: Path, plugin: Any, server: QgsServer) -> Clie
         def get_project_path(self, name: str) -> Path:
             return data.joinpath(name)
 
-        def get_project(self, name: str) -> Optional[QgsProject]:
+        def get_project(self, name: str) -> QgsProject:
             projectpath = self.get_project_path(name)
             assert projectpath.exists()
-            qgsproject = QgsProject(capabilities=Qgis.ProjectCapabilities())
-            if qgsproject.read(str(projectpath)):
-                return qgsproject
+            # see https://github.com/qgis/QGIS/pull/49266
+            # NOTE: Missing 'ProjectCapabilities' and 'ProjectReadFlags' in Qgis type
+            # declaration (_core.pyi) in Qgis 4
+            qgsproject = QgsProject(capabilities=Qgis.ProjectCapabilities())  # type: ignore [attr-defined]
+            if not qgsproject.read(str(projectpath)):
+                raise RuntimeError(f"Failed to read project from {projectpath}")
 
-            return None
+            return qgsproject
 
         def get(
             self,
@@ -119,8 +122,8 @@ def client(data: Path, output_dir: Path, plugin: Any, server: QgsServer) -> Clie
 
             request = QgsBufferServerRequest(
                 query,
-                QgsServerRequest.GetMethod,
-                headers,
+                QgsServerRequest.Method.GetMethod,
+                headers,  # type: ignore [arg-type]
                 None,
             )
             response = QgsBufferServerResponse()

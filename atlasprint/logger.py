@@ -6,13 +6,15 @@ PLUGIN = "AtlasPrint"
 
 
 def info(message: str):
-    QgsMessageLog.logMessage(message, PLUGIN, Qgis.Info)
+    QgsMessageLog.logMessage(message, PLUGIN, Qgis.MessageLevel.Info)
+
 
 def warning(message: str):
-    QgsMessageLog.logMessage(message, PLUGIN, Qgis.Warning)
+    QgsMessageLog.logMessage(message, PLUGIN, Qgis.MessageLevel.Warning)
+
 
 def critical(message: str):
-    QgsMessageLog.logMessage(message, PLUGIN, Qgis.Critical)
+    QgsMessageLog.logMessage(message, PLUGIN, Qgis.MessageLevel.Critical)
 
 
 debug = info
@@ -20,7 +22,7 @@ error = critical
 
 
 def log_exception(e: BaseException):
-    """ Log a Python exception. """
+    """Log a Python exception."""
     critical(
         "Critical exception:\n{e}\n{traceback}".format(
             e=e,

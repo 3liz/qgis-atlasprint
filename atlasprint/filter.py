@@ -22,36 +22,35 @@ from . import logger
 
 
 class AtlasPrintFilter(QgsServerFilter):
-
     def __init__(self, server_iface):
         super().__init__(server_iface)
 
-        logger.info('Init print filter')
+        logger.info("Init print filter")
         self.server_iface = server_iface
 
     def requestReady(self):
         handler = self.server_iface.requestHandler()
         params = handler.parameterMap()
 
-        service = params.get('SERVICE')
+        service = params.get("SERVICE")
         if not service:
             return
 
-        if service.lower() != 'wms':
+        if service.lower() != "wms":
             return
 
-        if 'REQUEST' not in params:
+        if "REQUEST" not in params:
             return
 
-        if params['REQUEST'].lower() not in ('getprintatlas', 'getcapabilitiesatlas'):
+        if params["REQUEST"].lower() not in ("getprintatlas", "getcapabilitiesatlas"):
             return
 
-        request = params['REQUEST'].lower()
+        request = params["REQUEST"].lower()
 
-        handler.setParameter('SERVICE', 'ATLAS')
-        handler.setParameter('VERSION', '1.0.0')
+        handler.setParameter("SERVICE", "ATLAS")
+        handler.setParameter("VERSION", "1.0.0")
 
-        if request == 'getcapabilitiesatlas':
-            handler.setParameter('REQUEST', 'GetCapabilities')
-        elif request == 'getprintatlas':
-            handler.setParameter('REQUEST', 'GetPrint')
+        if request == "getcapabilitiesatlas":
+            handler.setParameter("REQUEST", "GetCapabilities")
+        elif request == "getprintatlas":
+            handler.setParameter("REQUEST", "GetPrint")

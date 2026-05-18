@@ -3,25 +3,25 @@ import json
 
 from .core.client import Client
 
-PROJECT_FILE = 'no_atlas.qgs'
+PROJECT_FILE = "no_atlas.qgs"
 
 
 def test_atlas_metadata(client: Client):
-    """ Test plugin metadata using service WMS and ATLAS. """
+    """Test plugin metadata using service WMS and ATLAS."""
     urls = [
-        '?SERVICE=ATLAS&REQUEST=GetCapabilities&MAP={}'.format(PROJECT_FILE),
-        '?SERVICE=WMS&REQUEST=GetCapabilitiesAtlas&MAP={}'.format(PROJECT_FILE)
+        "?SERVICE=ATLAS&REQUEST=GetCapabilities&MAP={}".format(PROJECT_FILE),
+        "?SERVICE=WMS&REQUEST=GetCapabilitiesAtlas&MAP={}".format(PROJECT_FILE),
     ]
     for url in urls:
         rv = client.get(url, PROJECT_FILE)
         assert rv.status_code == 200
 
-        assert rv.headers.get('Content-Type', '').find('application/json') == 0
+        assert rv.headers.get("Content-Type", "").find("application/json") == 0
 
-        b = json.loads(rv.content.decode('utf-8'))
-        assert b['status'] == 'success'
+        b = json.loads(rv.content.decode("utf-8"))
+        assert b["status"] == "success"
 
-        assert 'metadata' in b
-        assert 'name' in b['metadata']
-        assert b['metadata']['name'] == 'atlasprint'
-        assert 'version' in b['metadata']
+        assert "metadata" in b
+        assert "name" in b["metadata"]
+        assert b["metadata"]["name"] == "atlasprint"
+        assert "version" in b["metadata"]

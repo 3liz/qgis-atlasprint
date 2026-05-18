@@ -47,7 +47,7 @@ class OWSResponse:
 
     @property
     def content(self) -> bytes:
-        return bytes(self._resp.body())
+        return self._resp.body().data()
 
     def file(self, extension: str) -> Path:
         _, path = tempfile.mkstemp(
