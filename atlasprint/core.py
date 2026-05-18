@@ -22,6 +22,7 @@ from qgis.core import (
     QgsLayoutItemMap,
     QgsMasterLayoutInterface,
     QgsProject,
+    QgsRenderContext,
     QgsSettings,
     QgsVectorLayer,
 )
@@ -301,9 +302,33 @@ def print_layout(
         # Default to PDF
         # PDF settings
         if atlas_layout:
-            rasterize = to_bool(atlas_layout.customProperty("rasterize", False))
-            logger.info(f"Request-ID {request_id}, rasterize = {rasterize}")
-            settings.rasterizeWholeImage = rasterize
+            settings.forcevectorOutput = to_bool(
+                atlas_layout.customProperty("forceVector", False),
+            )
+            settings.exportMetadata = to_bool(
+                atlas_layout.customProperty("pdfIncludeMetadata", False),
+            )
+            intTextRenderFormat = int(
+                atlas_layout.customProperty(
+                    "pdfTextFormat",
+                    int(QgsRenderContext.TextFormatAlwaysText),
+                )
+            )
+            textRenderFormatValues = {
+                int(QgsRenderContext.TextFormatAlwaysText): QgsRenderContext.TextFormatAlwaysText,
+                int(QgsRenderContext.TextFormatAlwaysOutlines): QgsRenderContext.TextFormatAlwaysOutlines,
+            }
+            settings.textRenderFormat = textRenderFormatValues.get(
+                intTextRenderFormat,
+                QgsRenderContext.TextFormatAlwaysText
+            )
+            settings.simplifyGeometries = to_bool(
+                atlas_layout.customProperty("pdfSimplify", False),
+            )
+            settings.rasterizeWholeImage = to_bool(
+                atlas_layout.customProperty("rasterize", False),
+            )
+            logger.info(f"Request-ID {request_id}, rasterize = {settings.rasterizeWholeImage}")
         # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
         # Let's override error message

@@ -1,5 +1,6 @@
 import json
 
+from pathlib import Path
 from qgis.core import Qgis
 
 from .core.client import Client
@@ -163,7 +164,7 @@ def test_invalid_atlas_layout(client: Client):
         'ATLAS - Error from the user while generating the PDF: Request-ID ND, layout `layout-no-atlas` not found')
 
 
-def test_valid_getprint_atlas_pdf(client: Client):
+def test_valid_getprint_atlas_pdf(client: Client, output_dir: Path):
     """ Test Atlas GetPrint response for atlas as PDF. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -178,8 +179,10 @@ def test_valid_getprint_atlas_pdf(client: Client):
     assert rv.headers.get('Content-Type', '') == 'application/pdf'
     assert rv.headers.get('Content-Type', '').find('application/pdf') == 0
 
+    output_dir.joinpath("layout-1-atlas.pdf").write_bytes(rv.content)
 
-def test_valid_getprint_atlas_png(client: Client):
+
+def test_valid_getprint_atlas_png(client: Client, output_dir: Path):
     """ Test Atlas GetPrint response for atlas as PNG. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -193,8 +196,10 @@ def test_valid_getprint_atlas_png(client: Client):
 
     assert rv.headers.get('Content-Type', '') == 'image/png'
 
+    output_dir.joinpath("layout-1-atlas.png").write_bytes(rv.content)
 
-def test_valid_getprint_atlas_svg(client: Client):
+
+def test_valid_getprint_atlas_svg(client: Client, output_dir: Path):
     """ Test Atlas GetPrint response for atlas as SVG. """
     # Default to PDF, not sure about the broken SVG for now ...
     qs = (
@@ -209,8 +214,10 @@ def test_valid_getprint_atlas_svg(client: Client):
 
     assert rv.headers.get('Content-Type', '') == 'application/pdf'
 
+    output_dir.joinpath("layout-1-atlas.svg").write_bytes(rv.content)
 
-def test_valid_getprint_atlas_jpeg(client: Client):
+
+def test_valid_getprint_atlas_jpeg(client: Client, output_dir: Path):
     """ Test Atlas GetPrint response for atlas as JPEG. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -223,6 +230,8 @@ def test_valid_getprint_atlas_jpeg(client: Client):
     assert rv.status_code == 200
 
     assert rv.headers.get('Content-Type', '') == 'image/jpeg'
+
+    output_dir.joinpath("layout-1-atlas.jpg").write_bytes(rv.content)
 
 
 def test_valid_get_print_atlas_accent(client: Client):
@@ -239,7 +248,7 @@ def test_valid_get_print_atlas_accent(client: Client):
     assert rv.headers.get('Content-Type', '') == 'application/pdf'
 
 
-def test_valid_getprint_report(client: Client):
+def test_valid_getprint_report(client: Client, output_dir: Path):
     """ Test Atlas GetPrint response for report. """
     qs = (
         '?SERVICE=ATLAS&'
@@ -252,3 +261,5 @@ def test_valid_getprint_report(client: Client):
 
     assert rv.headers.get('Content-Type', '') == 'application/pdf'
     assert rv.headers.get('Content-Type', '').find('application/pdf') == 0
+
+    output_dir.joinpath("layout2-report.pdf").write_bytes(rv.content)
