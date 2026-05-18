@@ -22,6 +22,7 @@ from qgis.core import (
     QgsLayoutItemMap,
     QgsMasterLayoutInterface,
     QgsProject,
+    QgsRenderContext,
     QgsSettings,
     QgsVectorLayer,
 )
@@ -42,7 +43,6 @@ class OutputFormat(Enum):
     Pdf = 'application/pdf'
     Png = 'image/png'
     Jpeg = 'image/jpeg'
-    Svg = 'image/svg'
 
 
 class AtlasPrintException(Exception):
@@ -75,7 +75,6 @@ def global_scales() -> List[float]:
 
 
 ExportSettings = Union[
-    QgsLayoutExporter.SvgExportSettings,
     QgsLayoutExporter.ImageExportSettings,
     QgsLayoutExporter.PdfExportSettings,
 ]
@@ -245,9 +244,7 @@ def print_layout(
         )
 
     logger.debug(f'Request-ID {request_id}, preparing settings for the output format "{output_format}"')
-    if output_format == OutputFormat.Svg:
-        settings = QgsLayoutExporter.SvgExportSettings()
-    elif output_format in (OutputFormat.Png, OutputFormat.Jpeg):
+    if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
         settings = QgsLayoutExporter.ImageExportSettings()
     else:
         # PDF by default
@@ -293,17 +290,37 @@ def print_layout(
         exporter = QgsLayoutExporter(atlas_layout or report_layout)
         result = exporter.exportToImage(str(export_path), settings)
         error = result_message(result)
-    elif output_format in (OutputFormat.Svg, ):
-        exporter = QgsLayoutExporter(atlas_layout or report_layout)
-        result = exporter.exportToSvg(str(export_path), settings)
-        error = result_message(result)
     else:
         # Default to PDF
         # PDF settings
         if atlas_layout:
-            rasterize = to_bool(atlas_layout.customProperty("rasterize", False))
-            logger.info(f"Request-ID {request_id}, rasterize = {rasterize}")
-            settings.rasterizeWholeImage = rasterize
+            settings.forcevectorOutput = to_bool(
+                atlas_layout.customProperty("forceVector", False),
+            )
+            settings.exportMetadata = to_bool(
+                atlas_layout.customProperty("pdfIncludeMetadata", False),
+            )
+            intTextRenderFormat = int(
+                atlas_layout.customProperty(
+                    "pdfTextFormat",
+                    int(QgsRenderContext.TextFormatAlwaysText),
+                )
+            )
+            textRenderFormatValues = {
+                int(QgsRenderContext.TextFormatAlwaysText): QgsRenderContext.TextFormatAlwaysText,
+                int(QgsRenderContext.TextFormatAlwaysOutlines): QgsRenderContext.TextFormatAlwaysOutlines,
+            }
+            settings.textRenderFormat = textRenderFormatValues.get(
+                intTextRenderFormat,
+                QgsRenderContext.TextFormatAlwaysText
+            )
+            settings.simplifyGeometries = to_bool(
+                atlas_layout.customProperty("pdfSimplify", False),
+            )
+            settings.rasterizeWholeImage = to_bool(
+                atlas_layout.customProperty("rasterize", False),
+            )
+            logger.info(f"Request-ID {request_id}, rasterize = {settings.rasterizeWholeImage}")
         # Export
         result, error = QgsLayoutExporter.exportToPdf(atlas or report_layout, str(export_path), settings)
         # Let's override error message
@@ -341,8 +358,6 @@ def result_message(error: QgsLayoutExporter.ExportResult) -> str:
         return 'File error'
     if error == QgsLayoutExporter.PrintError:
         return 'Print error'
-    if error == QgsLayoutExporter.SvgLayerError:
-        return 'SVG layer error'
     if error == QgsLayoutExporter.IteratorError:
         return 'Iterator error'
 
@@ -380,10 +395,6 @@ def parse_output_format(output: Union[str, None]) -> OutputFormat:
 
     if output in ('image/jpeg', 'jpeg', 'jpg'):
         return OutputFormat.Jpeg
-
-    if output in ('svg', 'image/svg', 'image/svg+xml'):
-        logger.info('SVG is not well supported. Default to PDF')
-        return OutputFormat.Pdf
 
     # Default value
     logger.info(f'Output format is invalid, default to PDF. It was "{output}"')
