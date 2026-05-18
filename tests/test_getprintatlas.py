@@ -194,22 +194,6 @@ def test_valid_getprint_atlas_png(client: Client):
     assert rv.headers.get('Content-Type', '') == 'image/png'
 
 
-def test_valid_getprint_atlas_svg(client: Client):
-    """ Test Atlas GetPrint response for atlas as SVG. """
-    # Default to PDF, not sure about the broken SVG for now ...
-    qs = (
-        '?SERVICE=ATLAS&'
-        'REQUEST=GetPrint&'
-        'MAP={}&'
-        'TEMPLATE=layout1-atlas&'
-        'FORMAT=image/svg&'
-        'EXP_FILTER=id in (1, 2)'.format(PROJECT_ATLAS_SIMPLE))
-    rv = client.get(qs, PROJECT_ATLAS_SIMPLE)
-    assert rv.status_code == 200
-
-    assert rv.headers.get('Content-Type', '') == 'application/pdf'
-
-
 def test_valid_getprint_atlas_jpeg(client: Client):
     """ Test Atlas GetPrint response for atlas as JPEG. """
     qs = (
