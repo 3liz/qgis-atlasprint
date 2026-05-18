@@ -3,14 +3,14 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      dry-run:
+      dry_run:
         description: Execute dry run
         required: true
         type: boolean
         default: false
 
 jobs:
-  release-dry-run:
+  release:
     if: github.repository_owner == '3liz'
     runs-on: ubuntu-latest
     steps:
