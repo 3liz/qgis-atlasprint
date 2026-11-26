@@ -32,6 +32,7 @@ from qgis.server import QgsServerRequest, QgsServerResponse, QgsService
 from qgis.utils import pluginMetadata
 
 from .core import AtlasPrintException, parse_output_format, print_layout
+from .map_layers import is_map_parameter, parse_map_parameters
 from .tools import get_lizmap_groups, get_lizmap_user_login
 
 from . import logger
@@ -199,10 +200,14 @@ class AtlasPrintService(QgsService):
                 except ValueError:
                     raise AtlasPrintException("Invalid number in SCALES.")
 
+            # Layers of the layout maps: mapN:LAYERS, mapN:STYLES, mapN:OPACITIES
+            map_parameters = parse_map_parameters(params)
+
             additional_params = {
                 k: v
                 for k, v in params.items()
-                if k.upper()
+                if not is_map_parameter(k)
+                and k.upper()
                 not in (
                     "TEMPLATE",
                     "EXP_FILTER",
@@ -236,6 +241,7 @@ class AtlasPrintService(QgsService):
                 scales=scales,
                 feature_filter=feature_filter,
                 request_id=request_id,
+                map_parameters=map_parameters,
                 **additional_params,
             )
         except AtlasPrintException as e:
