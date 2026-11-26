@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Dict,
     List,
     Union,
     Optional,
@@ -29,6 +30,7 @@ from qgis.core import (
 )
 from qgis.gui import QgsLayerTreeMapCanvasBridge, QgsMapCanvas
 
+from .map_layers import MapLayersParameters, apply_map_parameters
 from .tools import to_bool
 from . import logger
 
@@ -198,6 +200,7 @@ def print_layout(
     scales: Optional[list] = None,
     scale: Optional[int] = None,
     request_id: str = "",
+    map_parameters: Optional[Dict[int, MapLayersParameters]] = None,
     **additional_params,
 ) -> Path:
     """Generate a PDF for an atlas or a report.
@@ -223,6 +226,9 @@ def print_layout(
     :param output_format: The output format, default to PDF if not provided.
 
     :param request_id: The X-Request-ID for a better debug.
+
+    :param map_parameters: The layers, styles and opacities to use by map index in the atlas layout,
+    from the mapN:LAYERS, mapN:STYLES and mapN:OPACITIES parameters.
 
     :return: Path to the PDF.
     :rtype: basestring
@@ -279,86 +285,96 @@ def print_layout(
     else:
         raise AtlasPrintException(f"Request-ID {request_id}, the layout is not supported by the plugin")
 
-    file_name = f"{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}"
-    export_path = Path(tempfile.gettempdir()).joinpath(file_name)
-
-    logger.info(
-        f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}"
+    # Use the layers requested for the atlas layout maps, until the export is done
+    restore_maps = (
+        apply_map_parameters(project, atlas_layout, map_parameters, request_id)
+        if atlas_layout and map_parameters
+        else None
     )
+    try:
+        file_name = f"{clean_string(layout_name)}_{uuid4()}.{output_format.name.lower()}"
+        export_path = Path(tempfile.gettempdir()).joinpath(file_name)
 
-    if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
-        exporter = QgsLayoutExporter(atlas_layout or report_layout)  # type: ignore [arg-type]
-        result = exporter.exportToImage(str(export_path), settings)  # type: ignore [arg-type]
-        error = result_message(result)
-    elif output_format in (OutputFormat.Svg,):
-        exporter = QgsLayoutExporter(atlas_layout or report_layout)  # type: ignore [arg-type]
-        result = exporter.exportToSvg(str(export_path), settings)
-        error = result_message(result)
-    else:
-        # Default to PDF
-        # PDF settings
-        if atlas_layout:
-            settings = cast("QgsLayoutExporter.PdfExportSettings", settings)  # type: ignore
+        logger.info(
+            f"Request-ID {request_id}, exporting the request in {export_path} using {output_format.value}"
+        )
 
-            TextRenderFormat = Qgis.TextRenderFormat
+        if output_format in (OutputFormat.Png, OutputFormat.Jpeg):
+            exporter = QgsLayoutExporter(atlas_layout or report_layout)  # type: ignore [arg-type]
+            result = exporter.exportToImage(str(export_path), settings)  # type: ignore [arg-type]
+            error = result_message(result)
+        elif output_format in (OutputFormat.Svg,):
+            exporter = QgsLayoutExporter(atlas_layout or report_layout)  # type: ignore [arg-type]
+            result = exporter.exportToSvg(str(export_path), settings)
+            error = result_message(result)
+        else:
+            # Default to PDF
+            # PDF settings
+            if atlas_layout:
+                settings = cast("QgsLayoutExporter.PdfExportSettings", settings)  # type: ignore
 
-            settings.forceVectorOutput = to_bool(
-                atlas_layout.customProperty("forceVector", False),
-            )
-            settings.exportMetadata = to_bool(
-                atlas_layout.customProperty("pdfIncludeMetadata", False),
-            )
-            intTextRenderFormat = int(
-                atlas_layout.customProperty(
-                    "pdfTextFormat",
-                    int(TextRenderFormat.AlwaysText),
+                TextRenderFormat = Qgis.TextRenderFormat
+
+                settings.forceVectorOutput = to_bool(
+                    atlas_layout.customProperty("forceVector", False),
                 )
+                settings.exportMetadata = to_bool(
+                    atlas_layout.customProperty("pdfIncludeMetadata", False),
+                )
+                intTextRenderFormat = int(
+                    atlas_layout.customProperty(
+                        "pdfTextFormat",
+                        int(TextRenderFormat.AlwaysText),
+                    )
+                )
+                textRenderFormatValues = {
+                    int(TextRenderFormat.AlwaysText): TextRenderFormat.AlwaysText,
+                    int(TextRenderFormat.AlwaysOutlines): TextRenderFormat.AlwaysOutlines,
+                }
+                settings.textRenderFormat = textRenderFormatValues.get(
+                    intTextRenderFormat, TextRenderFormat.AlwaysText
+                )
+                settings.simplifyGeometries = to_bool(
+                    atlas_layout.customProperty("pdfSimplify", False),
+                )
+                # NOTE: Why mypy ignore settings redefinition above ?
+                settings.rasterizeWholeImage = to_bool(  # type: ignore [attr-defined]
+                    atlas_layout.customProperty("rasterize", False),
+                )
+                logger.info(f"Request-ID {request_id}, rasterize = {settings.rasterizeWholeImage}")  # type: ignore
+            # Export
+            # TODO: check out the typing error
+            result, error = QgsLayoutExporter.exportToPdf(  # type: ignore [call-overload]
+                atlas or report_layout,
+                str(export_path),
+                settings,
             )
-            textRenderFormatValues = {
-                int(TextRenderFormat.AlwaysText): TextRenderFormat.AlwaysText,
-                int(TextRenderFormat.AlwaysOutlines): TextRenderFormat.AlwaysOutlines,
-            }
-            settings.textRenderFormat = textRenderFormatValues.get(
-                intTextRenderFormat, TextRenderFormat.AlwaysText
+            # Let's override error message
+            _ = error
+            error = result_message(result)
+
+        logger.info(f"Request-ID {request_id}, export done, result {result_message(result)}")
+
+        if result != QgsLayoutExporter.ExportResult.Success:
+            raise AtlasPrintException(
+                f"Request-ID {request_id}, export not generated in QGIS exporter {export_path} : {error}"
             )
-            settings.simplifyGeometries = to_bool(
-                atlas_layout.customProperty("pdfSimplify", False),
+
+        if not export_path.is_file():
+            logger.warning(
+                f"Request-ID {request_id}, \n"
+                f"No error from QGIS Exporter, but the file does not exist.\n"
+                f"Message from QGIS exporter : {error}\n"
+                f"File path : {export_path}\n"
             )
-            # NOTE: Why mypy ignore settings redefinition above ?
-            settings.rasterizeWholeImage = to_bool(  # type: ignore [attr-defined]
-                atlas_layout.customProperty("rasterize", False),
+            raise AtlasPrintException(
+                f"Export OK from QGIS, but file not found on the file system : {export_path}"
             )
-            logger.info(f"Request-ID {request_id}, rasterize = {settings.rasterizeWholeImage}")  # type: ignore
-        # Export
-        # TODO: check out the typing error
-        result, error = QgsLayoutExporter.exportToPdf(  # type: ignore [call-overload]
-            atlas or report_layout,
-            str(export_path),
-            settings,
-        )
-        # Let's override error message
-        _ = error
-        error = result_message(result)
 
-    logger.info(f"Request-ID {request_id}, export done, result {result_message(result)}")
-
-    if result != QgsLayoutExporter.ExportResult.Success:
-        raise AtlasPrintException(
-            f"Request-ID {request_id}, export not generated in QGIS exporter {export_path} : {error}"
-        )
-
-    if not export_path.is_file():
-        logger.warning(
-            f"Request-ID {request_id}, \n"
-            f"No error from QGIS Exporter, but the file does not exist.\n"
-            f"Message from QGIS exporter : {error}\n"
-            f"File path : {export_path}\n"
-        )
-        raise AtlasPrintException(
-            f"Export OK from QGIS, but file not found on the file system : {export_path}"
-        )
-
-    return export_path
+        return export_path
+    finally:
+        if restore_maps:
+            restore_maps()
 
 
 def result_message(error: QgsLayoutExporter.ExportResult) -> str:
